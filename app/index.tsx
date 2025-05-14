@@ -26,9 +26,9 @@ const OnBoardingPage = () => {
   const DoneButton = ({ isLight, ...props }: any) => (
     <TouchableOpacity
       {...props}
-      style={[styles.doneButton, { backgroundColor: AppColors.dark.tint }]}
+      style={[styles.doneButton, { backgroundColor: "#2BBBAD" }]}
     >
-      <Text style={styles.doneButtonText}>Get Started</Text>
+      <Text style={styles.doneButtonText}>Start Now</Text>
     </TouchableOpacity>
   );
 
@@ -56,7 +56,7 @@ const OnBoardingPage = () => {
             backgroundColor: AppColors.dark.background,
             image: (
               <Image
-                source={require("../assets/images/design.png")}
+                source={require("../assets/images/placeholder.png")}
                 style={styles.image}
               />
             ),
