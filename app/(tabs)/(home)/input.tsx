@@ -10,8 +10,11 @@ import {
   View,
 } from "react-native";
 import EmojiSelector from "react-native-emoji-selector";
+import "react-native-get-random-values";
+import { v4 as uuidv4 } from "uuid";
 import { AppColors } from "../../../constants/Colors";
-import { useCategoryContext } from "../../../context/CategoryContext";
+import useCategoryStore from "../../../stores/useCategoryStore";
+import useExpenseStore from "../../../stores/useExpenseStore";
 
 const InputPage = () => {
   const [amount, setAmount] = useState("");
@@ -21,12 +24,16 @@ const InputPage = () => {
   const [note, setNote] = useState("");
   const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
   const [newCategory, setNewCategory] = useState("");
-  const { categoryIcons, setCategoryIcons } = useCategoryContext();
+
+  // Using Zustand store instead of context
+  const categoryIcons = useCategoryStore((state) => state.categoryIcons);
+  const addCategory = useCategoryStore((state) => state.addCategory);
+  const addExpense = useExpenseStore((state) => state.addExpense);
 
   const handleAddCategory = () => {
     if (newCategory.trim() && emoji) {
       console.log("Adding category:", newCategory, "with emoji:", emoji);
-      setCategoryIcons({ ...categoryIcons, [newCategory]: emoji });
+      addCategory(newCategory, emoji);
       setCategory(newCategory);
       setNewCategory("");
       setEmoji(null);
@@ -37,7 +44,27 @@ const InputPage = () => {
   };
 
   const handleExpenseSubmit = () => {
-    console.log("Expense submitted:", { amount, category, date, note });
+    if (!amount || !category) {
+      console.log("Amount or category is missing.");
+      return;
+    }
+
+    // validate amount
+    const parsedAmount = parseFloat(amount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      console.log("Invalid amount.");
+      return;
+    }
+
+    addExpense({
+      id: uuidv4(),
+      amount,
+      category,
+      emoji: categoryIcons[category] || "❓",
+      date: date.toISOString(),
+      note,
+    });
+
     // Add logic to handle expense submission
     router.replace("/(tabs)/(home)");
   };
@@ -168,6 +195,7 @@ const InputPage = () => {
         style={styles.input}
         placeholder="Add a note"
         placeholderTextColor={AppColors.dark.secondaryText}
+        maxLength={40}
         value={note}
         onChangeText={setNote}
       />

@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
+  Alert,
   FlatList,
   Image,
   Modal,
@@ -10,72 +11,35 @@ import {
   SafeAreaView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { ProgressBar } from "react-native-paper";
 import { AppColors } from "../../../constants/Colors";
-import mockExpenses from "../../../sampleData/mockExpenses";
-
-type Period = "Day" | "Week" | "Month";
-
-const calculateSpent = (period: Period) => {
-  const now = new Date();
-  const filteredExpenses = mockExpenses.filter((expense) => {
-    const expenseDate = new Date(expense.date);
-    if (period === "Day") {
-      return expenseDate.toDateString() === now.toDateString();
-    } else if (period === "Week") {
-      const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay());
-      return expenseDate >= startOfWeek && expenseDate <= now;
-    } else if (period === "Month") {
-      return (
-        expenseDate.getMonth() === now.getMonth() &&
-        expenseDate.getFullYear() === now.getFullYear()
-      );
-    }
-  });
-  return filteredExpenses.reduce(
-    (total, expense) => total + parseFloat(expense.amount),
-    0
-  );
-};
+import useExpenseStore, { Period } from "../../../stores/useExpenseStore";
 
 const HomePage = () => {
-  const [selectedPeriod, setSelectedPeriod] = useState<Period>("Week");
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isBudgetModalVisible, setIsBudgetModalVisible] = useState(false);
+  const [newBudget, setNewBudget] = useState("");
 
-  const budgetData: Record<Period, { spent: number; total: number }> = {
-    Day: { spent: 100, total: 500 },
-    Week: { spent: 100, total: 500 },
-    Month: { spent: 2000, total: 5000 },
-  };
+  // Use Zustand store instead of local state and functions
+  const selectedPeriod = useExpenseStore((state) => state.selectedPeriod);
+  const setSelectedPeriod = useExpenseStore((state) => state.setSelectedPeriod);
+  const budgetData = useExpenseStore((state) => state.budgetData);
+  const calculateSpent = useExpenseStore((state) => state.calculateSpent);
+  const getFilteredExpenses = useExpenseStore(
+    (state) => state.getFilteredExpenses
+  );
+  const updateBudget = useExpenseStore((state) => state.updateBudget);
 
   const spent = calculateSpent(selectedPeriod);
   const { total } = budgetData[selectedPeriod];
   const progress = spent / total;
 
-  const filteredExpenses = mockExpenses
-    .filter((expense) => {
-      const expenseDate = new Date(expense.date);
-      if (selectedPeriod === "Day") {
-        return expenseDate.toDateString() === new Date().toDateString();
-      } else if (selectedPeriod === "Week") {
-        const now = new Date();
-        const startOfWeek = new Date(now);
-        startOfWeek.setDate(now.getDate() - now.getDay());
-        return expenseDate >= startOfWeek && expenseDate <= now;
-      } else if (selectedPeriod === "Month") {
-        const now = new Date();
-        return (
-          expenseDate.getMonth() === now.getMonth() &&
-          expenseDate.getFullYear() === now.getFullYear()
-        );
-      }
-    })
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const filteredExpenses = getFilteredExpenses();
 
   console.log("Filtered Expenses:", filteredExpenses);
 
@@ -136,9 +100,26 @@ const HomePage = () => {
 
       {/* Tappable Card */}
       <View style={styles.budgetCard}>
-        <Text style={styles.budgetTitle}>📅 {selectedPeriod} Budget</Text>
+        <View style={styles.budgetHeader}>
+          <Text style={styles.budgetTitle}>📅 {selectedPeriod} Budget</Text>
+          <TouchableOpacity onPress={() => setIsBudgetModalVisible(true)}>
+            <Ionicons name="pencil" size={20} color={AppColors.dark.text} />
+          </TouchableOpacity>
+        </View>
         <Text style={styles.budgetDetails}>
           💸 ${spent} spent of ${total}
+        </Text>
+        <Text
+          style={[
+            styles.budgetStatus,
+            spent >= total ? styles.exceededText : styles.remainingText,
+          ]}
+        >
+          {spent === total
+            ? `⚠️ Budget Limit reached!`
+            : spent > total
+            ? `⚠️ Exceeded by $${(spent - total).toFixed(2)}`
+            : `✅ $${(total - spent).toFixed(2)} left`}
         </Text>
         <ProgressBar
           progress={progress}
@@ -146,6 +127,52 @@ const HomePage = () => {
           style={styles.progressBar}
         />
       </View>
+
+      {/* Budget Update Modal */}
+      <Modal
+        visible={isBudgetModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsBudgetModalVisible(false)}
+      >
+        <TouchableWithoutFeedback
+          onPress={() => setIsBudgetModalVisible(false)}
+        >
+          <View style={styles.bottomSheetContainer}>
+            <View style={styles.bottomSheetContent}>
+              <Text style={styles.modalTitle}>
+                Update Budget for {selectedPeriod}
+              </Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter new budget"
+                placeholderTextColor={AppColors.dark.secondaryText}
+                keyboardType="numeric"
+                value={newBudget}
+                onChangeText={setNewBudget}
+              />
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={() => {
+                  const parsedBudget = parseFloat(newBudget);
+                  if (!isNaN(parsedBudget) && parsedBudget > 0) {
+                    updateBudget(selectedPeriod, parsedBudget);
+                    setIsBudgetModalVisible(false);
+                    setNewBudget("");
+                  } else {
+                    Alert.alert(
+                      "Invalid Input",
+                      "Please enter a valid budget amount."
+                    );
+                  }
+                }}
+              >
+                <Text style={styles.saveButtonText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
 
       {/* Recent Expenses Section */}
       <View style={styles.recentExpensesSection}>
@@ -157,7 +184,10 @@ const HomePage = () => {
             data={filteredExpenses}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
-              <View style={styles.expenseRow}>
+              <TouchableOpacity
+                style={styles.expenseRow}
+                onPress={() => router.push(`/expense/${item.id}`)}
+              >
                 <Text style={styles.expenseIcon}>{item.emoji}</Text>
                 <View style={styles.expenseDetailsContainer}>
                   <Text style={styles.expenseTitle}>{item.category}</Text>
@@ -169,7 +199,7 @@ const HomePage = () => {
                   )}
                 </View>
                 <Text style={styles.expenseAmount}>{item.amount}</Text>
-              </View>
+              </TouchableOpacity>
             )}
             ItemSeparatorComponent={() => <View style={styles.divider} />}
           />
@@ -235,6 +265,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 16,
   },
+  budgetHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   budgetTitle: {
     color: AppColors.dark.text,
     fontSize: 18,
@@ -244,6 +279,16 @@ const styles = StyleSheet.create({
     color: AppColors.dark.text,
     fontSize: 14,
     marginVertical: 8,
+  },
+  budgetStatus: {
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  exceededText: {
+    color: "#FF7043",
+  },
+  remainingText: {
+    color: AppColors.dark.tint,
   },
   progressBar: {
     height: 8,
@@ -286,6 +331,24 @@ const styles = StyleSheet.create({
   },
   modalOptionCheck: {
     marginRight: 8,
+  },
+  input: {
+    backgroundColor: AppColors.dark.tint + "20",
+    borderRadius: 8,
+    padding: 12,
+    color: AppColors.dark.text,
+    marginBottom: 16,
+  },
+  saveButton: {
+    backgroundColor: AppColors.dark.tint,
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  saveButtonText: {
+    color: AppColors.dark.background,
+    fontSize: 16,
+    fontWeight: "bold",
   },
   recentExpensesSection: {
     flex: 1,
