@@ -13,7 +13,7 @@ const HomeLayout = () => {
       <Stack.Screen
         name="input"
         options={{
-          presentation: "formSheet", // Changed from "formSheet" to "modal"
+          presentation: "formSheet",
           sheetGrabberVisible: true,
           sheetCornerRadius: 30,
           contentStyle: {

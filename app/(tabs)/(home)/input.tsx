@@ -95,7 +95,7 @@ const InputPage = () => {
           style={styles.addCategoryButton}
           onPress={() => setShowAddCategoryModal(true)}
         >
-          <Text style={styles.addCategoryText}>➕ Add Category</Text>
+          <Text style={styles.addCategoryText}>➕ Add</Text>
         </TouchableOpacity>
       </View>
 
@@ -244,10 +244,12 @@ const styles = StyleSheet.create({
     color: AppColors.dark.text,
   },
   addCategoryButton: {
-    marginTop: 8,
-    padding: 12,
-    backgroundColor: AppColors.dark.tint,
+    backgroundColor: AppColors.dark.secondaryBackground,
+    padding: 8,
     borderRadius: 4,
+    marginRight: 8,
+    marginBottom: 8,
+    justifyContent: "center",
     alignItems: "center",
   },
   addCategoryText: {

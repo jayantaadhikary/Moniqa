@@ -10,6 +10,7 @@ export const CategoryContext = createContext<{
     Dining: "🍕",
     Groceries: "🛒",
     Transport: "🚗",
+    Entertainment: "🎥",
   },
   setCategoryIcons: () => {},
 });

@@ -1,4 +1,5 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { format } from "date-fns";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -15,20 +16,36 @@ import {
 } from "react-native";
 import { ProgressBar } from "react-native-paper";
 import { AppColors } from "../../../constants/Colors";
-import { useCategoryContext } from "../../../context/CategoryContext";
+import mockExpenses from "../../../sampleData/mockExpenses";
 
 type Period = "Day" | "Week" | "Month";
 
-const dummyExpenses = [
-  { id: "1", title: "Groceries", amount: "$50", date: "May 15" },
-  { id: "2", title: "Transport", amount: "$20", date: "May 14" },
-  { id: "3", title: "Dining", amount: "$30", date: "May 13" },
-];
+const calculateSpent = (period: Period) => {
+  const now = new Date();
+  const filteredExpenses = mockExpenses.filter((expense) => {
+    const expenseDate = new Date(expense.date);
+    if (period === "Day") {
+      return expenseDate.toDateString() === now.toDateString();
+    } else if (period === "Week") {
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      return expenseDate >= startOfWeek && expenseDate <= now;
+    } else if (period === "Month") {
+      return (
+        expenseDate.getMonth() === now.getMonth() &&
+        expenseDate.getFullYear() === now.getFullYear()
+      );
+    }
+  });
+  return filteredExpenses.reduce(
+    (total, expense) => total + parseFloat(expense.amount),
+    0
+  );
+};
 
 const HomePage = () => {
   const [selectedPeriod, setSelectedPeriod] = useState<Period>("Week");
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const { categoryIcons } = useCategoryContext();
 
   const budgetData: Record<Period, { spent: number; total: number }> = {
     Day: { spent: 100, total: 500 },
@@ -36,8 +53,31 @@ const HomePage = () => {
     Month: { spent: 2000, total: 5000 },
   };
 
-  const { spent, total } = budgetData[selectedPeriod];
+  const spent = calculateSpent(selectedPeriod);
+  const { total } = budgetData[selectedPeriod];
   const progress = spent / total;
+
+  const filteredExpenses = mockExpenses
+    .filter((expense) => {
+      const expenseDate = new Date(expense.date);
+      if (selectedPeriod === "Day") {
+        return expenseDate.toDateString() === new Date().toDateString();
+      } else if (selectedPeriod === "Week") {
+        const now = new Date();
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay());
+        return expenseDate >= startOfWeek && expenseDate <= now;
+      } else if (selectedPeriod === "Month") {
+        const now = new Date();
+        return (
+          expenseDate.getMonth() === now.getMonth() &&
+          expenseDate.getFullYear() === now.getFullYear()
+        );
+      }
+    })
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  console.log("Filtered Expenses:", filteredExpenses);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -109,24 +149,44 @@ const HomePage = () => {
 
       {/* Recent Expenses Section */}
       <View style={styles.recentExpensesSection}>
-        <Text style={styles.sectionTitle}>Recent Expenses</Text>
-        <FlatList
-          data={dummyExpenses}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.expenseRow}>
-              <Text style={styles.expenseIcon}>
-                {categoryIcons[item.title] || "❓"}
-              </Text>
-              <View style={styles.expenseDetailsContainer}>
-                <Text style={styles.expenseTitle}>{item.title}</Text>
-                <Text style={styles.expenseDate}>{item.date}</Text>
+        {filteredExpenses.length > 0 && (
+          <Text style={styles.sectionTitle}>Recent Expenses</Text>
+        )}
+        {filteredExpenses.length > 0 ? (
+          <FlatList
+            data={filteredExpenses}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <View style={styles.expenseRow}>
+                <Text style={styles.expenseIcon}>{item.emoji}</Text>
+                <View style={styles.expenseDetailsContainer}>
+                  <Text style={styles.expenseTitle}>{item.category}</Text>
+                  <Text style={styles.expenseDate}>
+                    {format(new Date(item.date), "dd MMM")}
+                  </Text>
+                  {item.note && (
+                    <Text style={styles.expenseNote}>{item.note}</Text>
+                  )}
+                </View>
+                <Text style={styles.expenseAmount}>{item.amount}</Text>
               </View>
-              <Text style={styles.expenseAmount}>{item.amount}</Text>
-            </View>
-          )}
-          ItemSeparatorComponent={() => <View style={styles.divider} />}
-        />
+            )}
+            ItemSeparatorComponent={() => <View style={styles.divider} />}
+          />
+        ) : (
+          <View style={styles.emptyStateContainer}>
+            <Ionicons
+              name="wallet-outline"
+              size={64}
+              color={AppColors.dark.secondaryText}
+              style={styles.emptyStateIcon}
+            />
+            <Text style={styles.noExpensesText}>No expenses yet!</Text>
+            <Text style={styles.emptyStateMessage}>
+              Tap the + button to add your first expense.
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Floating Add Button */}
@@ -258,6 +318,11 @@ const styles = StyleSheet.create({
     color: AppColors.dark.secondaryText,
     fontSize: 12,
   },
+  expenseNote: {
+    color: AppColors.dark.secondaryText,
+    fontSize: 12,
+    marginTop: 4,
+  },
   expenseAmount: {
     fontWeight: "bold",
     color: AppColors.dark.text,
@@ -283,5 +348,26 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 5,
+  },
+  noExpensesText: {
+    color: AppColors.dark.secondaryText,
+    fontSize: 16,
+    textAlign: "center",
+    marginTop: 16,
+  },
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 16,
+  },
+  emptyStateIcon: {
+    marginBottom: 16,
+  },
+  emptyStateMessage: {
+    color: AppColors.dark.secondaryText,
+    fontSize: 14,
+    textAlign: "center",
+    marginTop: 8,
   },
 });
