@@ -1,6 +1,8 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { router } from "expo-router";
 import React, { useState } from "react";
 import {
+  Modal,
   StyleSheet,
   Text,
   TextInput,
@@ -17,7 +19,7 @@ const InputPage = () => {
   const [emoji, setEmoji] = useState<string | null>(null);
   const [date, setDate] = useState(new Date());
   const [note, setNote] = useState("");
-  const [showAddCategoryFields, setShowAddCategoryFields] = useState(false);
+  const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
   const [newCategory, setNewCategory] = useState("");
   const { categoryIcons, setCategoryIcons } = useCategoryContext();
 
@@ -28,10 +30,16 @@ const InputPage = () => {
       setCategory(newCategory);
       setNewCategory("");
       setEmoji(null);
-      setShowAddCategoryFields(false);
+      setShowAddCategoryModal(false);
     } else {
       console.log("Category name or emoji is missing.");
     }
+  };
+
+  const handleExpenseSubmit = () => {
+    console.log("Expense submitted:", { amount, category, date, note });
+    // Add logic to handle expense submission
+    router.replace("/(tabs)/(home)");
   };
 
   const categoryList = Object.keys(categoryIcons);
@@ -85,56 +93,74 @@ const InputPage = () => {
         ))}
         <TouchableOpacity
           style={styles.addCategoryButton}
-          onPress={() => setShowAddCategoryFields(!showAddCategoryFields)}
+          onPress={() => setShowAddCategoryModal(true)}
         >
           <Text style={styles.addCategoryText}>➕ Add Category</Text>
         </TouchableOpacity>
       </View>
 
-      {showAddCategoryFields && (
-        <View style={styles.newCategoryContainer}>
-          <TouchableOpacity
-            style={styles.input}
-            onPress={() => {
-              console.log("Opening emoji picker");
-              setEmoji(null); // Reset emoji selection
-            }}
-          >
-            <Text style={{ color: AppColors.dark.text }}>
-              {emoji || "Select Emoji"}
-            </Text>
-          </TouchableOpacity>
+      {/* Add Category Modal */}
+      <Modal
+        visible={showAddCategoryModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowAddCategoryModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Add New Category</Text>
 
-          {emoji === null && (
-            <View style={{ width: "100%", height: 200 }}>
-              <EmojiSelector
-                onEmojiSelected={(selectedEmoji: string) => {
-                  console.log("Emoji selected:", selectedEmoji);
-                  setEmoji(selectedEmoji);
+            {emoji === null ? (
+              <View style={{ width: "100%", height: 250 }}>
+                <EmojiSelector
+                  onEmojiSelected={(selectedEmoji: string) => {
+                    console.log("Emoji selected:", selectedEmoji);
+                    setEmoji(selectedEmoji);
+                  }}
+                  showSearchBar={false}
+                  showTabs={false}
+                  showSectionTitles={false}
+                  columns={6}
+                />
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.input}
+                onPress={() => {
+                  console.log("Opening emoji picker");
+                  setEmoji(null); // Reset emoji selection
                 }}
-                showSearchBar={false}
-                showTabs={true}
-                showSectionTitles={false}
-                columns={8}
-              />
-            </View>
-          )}
+              >
+                <Text style={{ color: AppColors.dark.text }}>
+                  {emoji || "Select Emoji"}
+                </Text>
+              </TouchableOpacity>
+            )}
 
-          <TextInput
-            style={styles.input}
-            placeholder="Enter category name (e.g., Art)"
-            placeholderTextColor={AppColors.dark.secondaryText}
-            value={newCategory}
-            onChangeText={setNewCategory}
-          />
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={handleAddCategory}
-          >
-            <Text style={styles.addButtonText}>Add</Text>
-          </TouchableOpacity>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter category name (e.g., Art)"
+              placeholderTextColor={AppColors.dark.secondaryText}
+              value={newCategory}
+              onChangeText={setNewCategory}
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setShowAddCategoryModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={handleAddCategory}
+              >
+                <Text style={styles.addButtonText}>Add</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-      )}
+      </Modal>
 
       {/* Note Input */}
       <Text style={styles.label}>📝 Note (optional)</Text>
@@ -145,6 +171,16 @@ const InputPage = () => {
         value={note}
         onChangeText={setNote}
       />
+
+      {/* Submit Expense Button */}
+      <TouchableOpacity
+        style={styles.submitButton}
+        onPress={() => {
+          handleExpenseSubmit();
+        }}
+      >
+        <Text style={styles.submitButtonText}>Submit Expense</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -174,7 +210,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   inputContainer: {
-    flex: 2,
+    // flex: 2,
   },
   label: {
     color: AppColors.dark.text,
@@ -218,19 +254,64 @@ const styles = StyleSheet.create({
     color: AppColors.dark.text,
     fontWeight: "bold",
   },
-  newCategoryContainer: {
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: AppColors.dark.background,
+    padding: 16,
+    borderRadius: 8,
+    width: "80%",
+  },
+  modalTitle: {
+    color: AppColors.dark.text,
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: 16,
+  },
+  cancelButton: {
+    backgroundColor: AppColors.dark.secondaryBackground,
+    padding: 12,
+    borderRadius: 4,
+    flex: 1,
+    marginRight: 8,
+    alignItems: "center",
+  },
+  cancelButtonText: {
+    color: AppColors.dark.text,
+    textAlign: "center",
   },
   addButton: {
     backgroundColor: AppColors.dark.tint,
     padding: 12,
     borderRadius: 4,
-    marginTop: 8,
+    flex: 1,
+    marginLeft: 8,
     alignItems: "center",
   },
   addButtonText: {
     color: AppColors.dark.text,
     textAlign: "center",
+    fontWeight: "bold",
+  },
+  submitButton: {
+    backgroundColor: AppColors.dark.tint,
+    padding: 12,
+    borderRadius: 4,
+    alignItems: "center",
+    marginTop: 16,
+  },
+  submitButtonText: {
+    color: AppColors.dark.text,
     fontWeight: "bold",
   },
 });
