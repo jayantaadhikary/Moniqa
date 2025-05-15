@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400">
+  <!-- Orange Wallet Icon -->
+  <path d="M217.5 190C217.5 190 217.5 310 217.5 310C217.5 310 105 310 105 310C105 310 105 190 105 190C105 190 217.5 190 217.5 190Z" fill="#FF5722"/>
+  <path d="M217.5 190L217.5 215C217.5 215 210 222.5 200 222.5C190 222.5 182.5 215 182.5 215L182.5 190L217.5 190Z" fill="#FF5722"/>
+  <path d="M200 260C211.046 260 220 251.046 220 240C220 228.954 211.046 220 200 220C188.954 220 180 228.954 180 240C180 251.046 188.954 260 200 260Z" fill="#FF5722"/>
+  
+  <!-- White Outlines -->
+  <path d="M217.5 190C217.5 190 217.5 310 217.5 310C217.5 310 105 310 105 310C105 310 105 190 105 190C105 190 217.5 190 217.5 190Z" fill="none" stroke="white" stroke-width="6"/>
+  <path d="M217.5 190L217.5 215C217.5 215 210 222.5 200 222.5C190 222.5 182.5 215 182.5 215L182.5 190" fill="none" stroke="white" stroke-width="6"/>
+  <circle cx="200" cy="240" r="15" fill="#FF5722" stroke="white" stroke-width="6"/>
+  
+  <!-- White "Moniqa" Text -->
+  <text x="295" y="250" font-family="Arial, sans-serif" font-weight="bold" font-size="70" fill="white">Moniqa</text>
+</svg>

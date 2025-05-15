@@ -20,6 +20,10 @@
       "package": "com.jayantaadhikary.moniqa",
       "edgeToEdgeEnabled": true
     },
+    "androidNavigationBar": {
+      "barStyle": "light-content",
+      "backgroundColor": "#0D0D0D"
+    },
     "web": {
       "bundler": "metro",
       "output": "static",

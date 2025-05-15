@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
+  Animated,
   Dimensions,
   Image,
   StatusBar,
@@ -23,14 +24,37 @@ const OnBoardingPage = () => {
     router.replace("/(tabs)" as any);
   };
 
-  const DoneButton = ({ isLight, ...props }: any) => (
-    <TouchableOpacity
-      {...props}
-      style={[styles.doneButton, { backgroundColor: "#2BBBAD" }]}
-    >
-      <Text style={styles.doneButtonText}>Start Now</Text>
-    </TouchableOpacity>
-  );
+  const DoneButton = ({ isLight, ...props }: any) => {
+    const scaleAnim = useRef(new Animated.Value(1)).current;
+
+    useEffect(() => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(scaleAnim, {
+            toValue: 1.02,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleAnim, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    }, [scaleAnim]);
+
+    return (
+      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+        <TouchableOpacity
+          {...props}
+          style={[styles.doneButton, { backgroundColor: "#2BBBAD" }]}
+        >
+          <Text style={styles.doneButtonText}>Start Now</Text>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
 
   const SkipButton = ({ skipLabel, isLight, ...props }: any) => (
     <TouchableOpacity {...props}>

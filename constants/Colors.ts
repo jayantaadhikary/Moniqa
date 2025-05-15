@@ -2,10 +2,9 @@
  * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
  * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
  */
-
 // Primary accent colors
-const mintAccentDark = "#A5F3FC"; // Cool Mint
-const mintAccentLight = "#2BBBAD"; // Teal Blue
+const mintAccentDark = "#2BBBAD"; // Cool Mint
+const mintAccentLight = "#A5F3FC"; // Teal Blue"
 
 // Brand highlight colors
 const brandHighlightDark = "#2BBBAD"; // Teal Blue
@@ -32,6 +31,7 @@ export const AppColors = {
     tabIconSelected: mintAccentDark,
     secondaryText: "#D1D1D6", // Light Gray for secondary text
     brandHighlight: brandHighlightDark,
+    secondaryBackground: "#1e1e1e",
   },
 };
 
