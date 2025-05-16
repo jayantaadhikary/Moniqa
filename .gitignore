@@ -83,3 +83,7 @@ yarn-error.*
 # native project folders (using expo prebuild)
 android/
 ios/
+
+.github/
+.vscode/
+.idea/

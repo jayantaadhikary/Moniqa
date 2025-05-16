@@ -1,4 +1,4 @@
-## Moniqa: Track your money without friction — no categories, no spreadsheets, just habits.
+## Moniqa: Track your money without friction
 
 ### Features
 
@@ -33,3 +33,16 @@
 - [ ] Add App Lock
 - [ ] Add Notifications
 - [ ] A lot more
+
+### Premium Features (Coming Soon)
+
+- These features will be available for a small fee to support the development of the app and to keep it ad-free.
+
+1. Cloud Sync
+2. Export Data (CSV, PDF)
+3. Advanced Budgetting Features
+4. Advanced Analytics
+5. Ad Free
+6. Custom Logos & Widgets
+7. AI Integration (Maybe 🤷‍♂️ )
+8. Support an indie developer ❤️
