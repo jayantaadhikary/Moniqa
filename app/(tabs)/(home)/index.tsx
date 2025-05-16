@@ -6,7 +6,9 @@ import {
   Alert,
   FlatList,
   Image,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   SafeAreaView,
   StyleSheet,
@@ -135,43 +137,48 @@ const HomePage = () => {
         animationType="fade"
         onRequestClose={() => setIsBudgetModalVisible(false)}
       >
-        <TouchableWithoutFeedback
-          onPress={() => setIsBudgetModalVisible(false)}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
         >
-          <View style={styles.bottomSheetContainer}>
-            <View style={styles.bottomSheetContent}>
-              <Text style={styles.modalTitle}>
-                Update Budget for {selectedPeriod}
-              </Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter new budget"
-                placeholderTextColor={AppColors.dark.secondaryText}
-                keyboardType="numeric"
-                value={newBudget}
-                onChangeText={setNewBudget}
-              />
-              <TouchableOpacity
-                style={styles.saveButton}
-                onPress={() => {
-                  const parsedBudget = parseFloat(newBudget);
-                  if (!isNaN(parsedBudget) && parsedBudget > 0) {
-                    updateBudget(selectedPeriod, parsedBudget);
-                    setIsBudgetModalVisible(false);
-                    setNewBudget("");
-                  } else {
-                    Alert.alert(
-                      "Invalid Input",
-                      "Please enter a valid budget amount."
-                    );
-                  }
-                }}
-              >
-                <Text style={styles.saveButtonText}>Save</Text>
-              </TouchableOpacity>
+          <TouchableWithoutFeedback
+            onPress={() => setIsBudgetModalVisible(false)}
+          >
+            <View style={styles.bottomSheetContainer}>
+              <View style={styles.bottomSheetContent}>
+                <Text style={styles.modalTitle}>
+                  Update Budget for {selectedPeriod}
+                </Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter new budget"
+                  placeholderTextColor={AppColors.dark.secondaryText}
+                  keyboardType="numeric"
+                  value={newBudget}
+                  onChangeText={setNewBudget}
+                />
+                <TouchableOpacity
+                  style={styles.saveButton}
+                  onPress={() => {
+                    const parsedBudget = parseFloat(newBudget);
+                    if (!isNaN(parsedBudget) && parsedBudget > 0) {
+                      updateBudget(selectedPeriod, parsedBudget);
+                      setIsBudgetModalVisible(false);
+                      setNewBudget("");
+                    } else {
+                      Alert.alert(
+                        "Invalid Input",
+                        "Please enter a valid budget amount."
+                      );
+                    }
+                  }}
+                >
+                  <Text style={styles.saveButtonText}>Save</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        </TouchableWithoutFeedback>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Recent Expenses Section */}
@@ -192,7 +199,7 @@ const HomePage = () => {
                 <View style={styles.expenseDetailsContainer}>
                   <Text style={styles.expenseTitle}>{item.category}</Text>
                   <Text style={styles.expenseDate}>
-                    {format(new Date(item.date), "dd MMM")}``
+                    {format(new Date(item.date), "dd MMM")}
                   </Text>
                   {item.note && (
                     <Text style={styles.expenseNote}>{item.note}</Text>
