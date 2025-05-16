@@ -41,7 +41,7 @@ const HomePage = () => {
 
   const filteredExpenses = getFilteredExpenses();
 
-  console.log("Filtered Expenses:", filteredExpenses);
+  // console.log("Filtered Expenses:", filteredExpenses);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -192,7 +192,7 @@ const HomePage = () => {
                 <View style={styles.expenseDetailsContainer}>
                   <Text style={styles.expenseTitle}>{item.category}</Text>
                   <Text style={styles.expenseDate}>
-                    {format(new Date(item.date), "dd MMM")}
+                    {format(new Date(item.date), "dd MMM")}``
                   </Text>
                   {item.note && (
                     <Text style={styles.expenseNote}>{item.note}</Text>
@@ -222,7 +222,7 @@ const HomePage = () => {
       {/* Floating Add Button */}
       <TouchableOpacity
         style={styles.addButton}
-        onPress={() => router.push("/input")}
+        onPress={() => router.push("/(tabs)/(home)/input")}
       >
         <Ionicons name="add" size={24} color={AppColors.dark.text} />
       </TouchableOpacity>

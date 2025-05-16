@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import mockExpenses from "../sampleData/mockExpenses";
+import { getItem, setItem } from "../utils/mmkv";
 
 // Define the Period type
 export type Period = "Day" | "Week" | "Month";
@@ -33,46 +34,77 @@ interface ExpenseState {
   calculateSpent: (period: Period) => number;
 }
 
+// Helper function to load initial state from MMKV
+const loadInitialState = () => {
+  const expenses = getItem("expenses");
+  const selectedPeriod = getItem("selectedPeriod");
+  const budgetData = getItem("budgetData");
+
+  return {
+    expenses: expenses ? JSON.parse(expenses) : mockExpenses,
+    selectedPeriod: (selectedPeriod as Period) || "Week",
+    budgetData: budgetData
+      ? JSON.parse(budgetData)
+      : {
+          Day: { spent: 100, total: 500 },
+          Week: { spent: 100, total: 500 },
+          Month: { spent: 2000, total: 5000 },
+        },
+  };
+};
+
 // Create the store
 const useExpenseStore = create<ExpenseState>((set, get) => ({
   // Initial state
-  expenses: mockExpenses,
-  selectedPeriod: "Week",
-  budgetData: {
-    Day: { spent: 100, total: 500 },
-    Week: { spent: 100, total: 500 },
-    Month: { spent: 2000, total: 5000 },
-  },
+  ...loadInitialState(),
 
   // Actions
-  setSelectedPeriod: (period) => set({ selectedPeriod: period }),
+  setSelectedPeriod: (period) => {
+    set({ selectedPeriod: period });
+    setItem("selectedPeriod", period);
+  },
 
-  addExpense: (expense) =>
-    set((state) => ({
-      expenses: [expense, ...state.expenses],
-    })),
+  addExpense: (expense) => {
+    set((state) => {
+      const updatedExpenses = [expense, ...state.expenses];
+      setItem("expenses", JSON.stringify(updatedExpenses));
+      return { expenses: updatedExpenses };
+    });
+  },
 
-  editExpense: (id, updatedExpense) =>
-    set((state) => ({
-      expenses: state.expenses.map((expense) =>
+  editExpense: (id, updatedExpense) => {
+    set((state) => {
+      const updatedExpenses = state.expenses.map((expense) =>
         expense.id === id ? { ...expense, ...updatedExpense } : expense
-      ),
-    })),
-  deleteExpense: (id) =>
-    set((state) => ({
-      expenses: state.expenses.filter((expense) => expense.id !== id),
-    })),
+      );
+      setItem("expenses", JSON.stringify(updatedExpenses));
+      return { expenses: updatedExpenses };
+    });
+  },
 
-  updateBudget: (period, amount) =>
-    set((state) => ({
-      budgetData: {
+  deleteExpense: (id) => {
+    set((state) => {
+      const updatedExpenses = state.expenses.filter(
+        (expense) => expense.id !== id
+      );
+      setItem("expenses", JSON.stringify(updatedExpenses));
+      return { expenses: updatedExpenses };
+    });
+  },
+
+  updateBudget: (period, amount) => {
+    set((state) => {
+      const updatedBudgetData = {
         ...state.budgetData,
         [period]: {
           ...state.budgetData[period],
           total: amount,
         },
-      },
-    })),
+      };
+      setItem("budgetData", JSON.stringify(updatedBudgetData));
+      return { budgetData: updatedBudgetData };
+    });
+  },
 
   // Calculations
   getFilteredExpenses: () => {

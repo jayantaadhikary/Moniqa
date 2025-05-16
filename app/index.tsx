@@ -126,6 +126,19 @@ const OnBoardingPage = () => {
             subtitle:
               "Set soft limits, track streaks, and get gentle nudges — all personalized for you.",
           },
+          {
+            backgroundColor: AppColors.dark.background,
+            image: (
+              <View style={styles.featureIconContainer}>
+                <View style={styles.featureIcon}>
+                  <Text style={styles.featureIconText}>🔒</Text>
+                </View>
+              </View>
+            ),
+            title: "Your money talk stays secret.",
+            subtitle:
+              "Moniqa keeps everything on your phone — we can’t see a thing, and we like it that way.",
+          },
         ]}
       />
     </>

@@ -6,9 +6,10 @@
 - View your spending habits over time
 - Local Storage for data privacy
 - Charts and graphs for visualizing your spending
+- Dark Mode for owls (no more blinding white screens)
 
 ### Tech Stack
 - React Native
 - TypeScript
 - Zustand
-- SQLite/MMKV
+- MMkV

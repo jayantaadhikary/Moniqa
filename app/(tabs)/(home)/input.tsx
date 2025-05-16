@@ -1,12 +1,17 @@
-import DateTimePicker from "@react-native-community/datetimepicker";
+// import DateTimePicker from "@react-native-community/datetimepicker";
+import { DateTimePicker as DateTimePickerAndroid } from "@expo/ui/jetpack-compose";
+import { DateTimePicker } from "@expo/ui/swift-ui";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
+  Keyboard,
   Modal,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import EmojiSelector from "react-native-emoji-selector";
@@ -72,144 +77,169 @@ const InputPage = () => {
   const categoryList = Object.keys(categoryIcons);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Add Expenses</Text>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <View style={styles.container}>
+        <Text style={styles.header}>Add Expenses</Text>
 
-      {/* Amount and Date Picker */}
-      <View style={styles.horizontalContainer}>
-        <View style={styles.labelContainer}>
-          <Text style={styles.label}>💵 Amount</Text>
-          <Text style={styles.label}>📅 Date</Text>
-        </View>
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="$0.00"
-            placeholderTextColor={AppColors.dark.secondaryText}
-            keyboardType="numeric"
-            value={amount}
-            onChangeText={setAmount}
-            autoFocus
-          />
-          <DateTimePicker
-            value={date}
-            mode="date"
-            display="default"
-            onChange={(event, selectedDate) => setDate(selectedDate || date)}
-            themeVariant="dark"
-          />
-        </View>
-      </View>
-
-      {/* Category Selection */}
-      <Text style={styles.label}>🗂️ Category</Text>
-      <View style={styles.categoryContainer}>
-        {categoryList.map((item) => (
-          <TouchableOpacity
-            key={item}
-            style={[
-              styles.categoryButton,
-              category === item && styles.selectedCategory,
-            ]}
-            onPress={() => setCategory(item)}
-          >
-            <Text style={styles.categoryText}>
-              {categoryIcons[item]} {item}
-            </Text>
-          </TouchableOpacity>
-        ))}
-        <TouchableOpacity
-          style={styles.addCategoryButton}
-          onPress={() => setShowAddCategoryModal(true)}
-        >
-          <Text style={styles.addCategoryText}>➕ Add</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Add Category Modal */}
-      <Modal
-        visible={showAddCategoryModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowAddCategoryModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add New Category</Text>
-
-            {emoji === null ? (
-              <View style={{ width: "100%", height: 250 }}>
-                <EmojiSelector
-                  onEmojiSelected={(selectedEmoji: string) => {
-                    console.log("Emoji selected:", selectedEmoji);
-                    setEmoji(selectedEmoji);
-                  }}
-                  showSearchBar={false}
-                  showTabs={false}
-                  showSectionTitles={false}
-                  columns={6}
-                />
-              </View>
-            ) : (
-              <TouchableOpacity
-                style={styles.input}
-                onPress={() => {
-                  console.log("Opening emoji picker");
-                  setEmoji(null); // Reset emoji selection
-                }}
-              >
-                <Text style={{ color: AppColors.dark.text }}>
-                  {emoji || "Select Emoji"}
-                </Text>
-              </TouchableOpacity>
-            )}
-
+        {/* Amount and Date Picker */}
+        <View style={styles.horizontalContainer}>
+          <View style={styles.labelContainer}>
+            <Text style={styles.label}>💵 Amount</Text>
+            <Text style={styles.label}>📅 Date</Text>
+          </View>
+          <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
-              placeholder="Enter category name (e.g., Art)"
+              placeholder="$0.00"
               placeholderTextColor={AppColors.dark.secondaryText}
-              value={newCategory}
-              onChangeText={setNewCategory}
+              keyboardType="numeric"
+              value={amount}
+              onChangeText={setAmount}
+              autoFocus
             />
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setShowAddCategoryModal(false)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={handleAddCategory}
-              >
-                <Text style={styles.addButtonText}>Add</Text>
-              </TouchableOpacity>
-            </View>
+            {Platform.OS === "ios" ? (
+              <DateTimePicker
+                initialDate={date.toISOString()}
+                onDateSelected={(date) => {
+                  setDate(date);
+                }}
+                title=""
+                variant="compact"
+                color={AppColors.dark.tint}
+                displayedComponents="date"
+              />
+            ) : (
+              <DateTimePickerAndroid
+                onDateSelected={(date) => {
+                  setDate(date);
+                }}
+                displayedComponents="date"
+                initialDate={date.toISOString()}
+                variant="input"
+                color={AppColors.dark.tint}
+              />
+            )}
+
+            {/* <DateTimePicker
+              value={date}
+              mode="date"
+              display="inline"
+              onChange={(event, selectedDate) => setDate(selectedDate || date)}
+              themeVariant="dark"
+            /> */}
           </View>
         </View>
-      </Modal>
 
-      {/* Note Input */}
-      <Text style={styles.label}>📝 Note (optional)</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Add a note"
-        placeholderTextColor={AppColors.dark.secondaryText}
-        maxLength={40}
-        value={note}
-        onChangeText={setNote}
-      />
+        {/* Category Selection */}
+        <Text style={styles.label}>🗂️ Category</Text>
+        <View style={styles.categoryContainer}>
+          {categoryList.map((item) => (
+            <TouchableOpacity
+              key={item}
+              style={[
+                styles.categoryButton,
+                category === item && styles.selectedCategory,
+              ]}
+              onPress={() => setCategory(item)}
+            >
+              <Text style={styles.categoryText}>
+                {categoryIcons[item]} {item}
+              </Text>
+            </TouchableOpacity>
+          ))}
+          <TouchableOpacity
+            style={styles.addCategoryButton}
+            onPress={() => setShowAddCategoryModal(true)}
+          >
+            <Text style={styles.addCategoryText}>➕ Add</Text>
+          </TouchableOpacity>
+        </View>
 
-      {/* Submit Expense Button */}
-      <TouchableOpacity
-        style={styles.submitButton}
-        onPress={() => {
-          handleExpenseSubmit();
-        }}
-      >
-        <Text style={styles.submitButtonText}>Submit Expense</Text>
-      </TouchableOpacity>
-    </View>
+        {/* Add Category Modal */}
+        <Modal
+          visible={showAddCategoryModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowAddCategoryModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Add New Category</Text>
+
+              {emoji === null ? (
+                <View style={{ width: "100%", height: 250 }}>
+                  <EmojiSelector
+                    onEmojiSelected={(selectedEmoji: string) => {
+                      console.log("Emoji selected:", selectedEmoji);
+                      setEmoji(selectedEmoji);
+                    }}
+                    showSearchBar={false}
+                    showTabs={false}
+                    showSectionTitles={false}
+                    columns={6}
+                  />
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.input}
+                  onPress={() => {
+                    console.log("Opening emoji picker");
+                    setEmoji(null); // Reset emoji selection
+                  }}
+                >
+                  <Text style={{ color: AppColors.dark.text }}>
+                    {emoji || "Select Emoji"}
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              <TextInput
+                style={styles.input}
+                placeholder="Enter category name (e.g., Art)"
+                placeholderTextColor={AppColors.dark.secondaryText}
+                value={newCategory}
+                onChangeText={setNewCategory}
+              />
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => setShowAddCategoryModal(false)}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.addButton}
+                  onPress={handleAddCategory}
+                >
+                  <Text style={styles.addButtonText}>Add</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Note Input */}
+        <Text style={styles.label}>📝 Note (optional)</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Add a note"
+          placeholderTextColor={AppColors.dark.secondaryText}
+          maxLength={40}
+          value={note}
+          onChangeText={setNote}
+        />
+
+        {/* Submit Expense Button */}
+        <TouchableOpacity
+          style={styles.submitButton}
+          onPress={() => {
+            handleExpenseSubmit();
+          }}
+        >
+          <Text style={styles.submitButtonText}>Submit Expense</Text>
+        </TouchableOpacity>
+      </View>
+    </TouchableWithoutFeedback>
   );
 };
 

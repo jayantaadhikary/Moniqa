@@ -1,15 +1,19 @@
-import { Ionicons } from "@expo/vector-icons";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { DateTimePicker as DateTimePickerAndroid } from "@expo/ui/jetpack-compose";
+import { DateTimePicker } from "@expo/ui/swift-ui";
+
 import {
   Alert,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+
+import { Ionicons } from "@expo/vector-icons";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AppColors } from "../../../../constants/Colors";
 import useCategoryStore from "../../../../stores/useCategoryStore";
@@ -125,8 +129,52 @@ const ExpenseDetailScreen = () => {
         />
 
         {/* Date Picker */}
-        <Text style={styles.label}>Date</Text>
-        <DateTimePicker
+
+        {Platform.OS === "ios" ? (
+          <DateTimePicker
+            onDateSelected={(date) => {
+              setDate(date);
+            }}
+            displayedComponents="date"
+            initialDate={date.toISOString()}
+            variant="compact"
+            style={{
+              // backgroundColor: AppColors.dark.secondaryBackground,
+              borderRadius: 8,
+              padding: 12,
+              marginTop: 16,
+            }}
+            title="Date"
+            color={AppColors.dark.text}
+          />
+        ) : (
+          <DateTimePickerAndroid
+            onDateSelected={(date) => {
+              setDate(date);
+            }}
+            displayedComponents="date"
+            initialDate={date.toISOString()}
+            variant="input"
+            style={{
+              // backgroundColor: AppColors.dark.secondaryBackground,
+              borderRadius: 8,
+              padding: 12,
+              marginTop: 16,
+            }}
+            color={AppColors.dark.text}
+          />
+        )}
+
+        {/* <DateTimePickerModal
+          isVisible={isDatePickerVisible}
+          mode="date"
+          onConfirm={handleDateConfirm}
+          onCancel={closeDatePicker}
+          date={date}
+          themeVariant="dark"
+          display="inline"
+        /> */}
+        {/* <DateTimePicker
           value={date}
           mode="date"
           display="default"
@@ -134,7 +182,7 @@ const ExpenseDetailScreen = () => {
             selectedDate && setDate(selectedDate)
           }
           themeVariant="dark"
-        />
+        /> */}
 
         {/* Note Input */}
         <Text style={styles.label}>Note (Optional)</Text>
