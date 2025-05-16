@@ -27,6 +27,11 @@ const loadInitialState = (): Record<string, string> => {
         Entertainment: "🎥",
         Utilities: "💡",
         Shopping: "🛍️",
+        Health: "💊",
+        Subscriptions: "📅",
+        Investments: "📈",
+        Hygiene: "🧼",
+        Miscellaneous: "🗂️",
       };
 };
 

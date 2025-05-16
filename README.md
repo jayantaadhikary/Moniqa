@@ -12,4 +12,12 @@
 - React Native
 - TypeScript
 - Zustand
-- MMkV
+- MMKV
+- Expo UI
+
+
+### Todo:
+- [ ] Add Auth (Google, Apple) - Figure out which platform to use
+- [ ] After Auth, a screen to choose a currency, budget and default categories
+- [ ] Figure out the summary screen idea
+- [ ] A lot more
