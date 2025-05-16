@@ -24,7 +24,7 @@ const ExpenseDetailScreen = () => {
   const expenses = useExpenseStore((state) => state.expenses);
   const editExpense = useExpenseStore((state) => state.editExpense);
   const deleteExpense = useExpenseStore((state) => state.deleteExpense);
-  const categoryIcons = useCategoryStore((state) => state.categoryIcons);
+  const categoryIcons = useCategoryStore((state) => state.userCategoryIcons);
 
   // Find the expense with the matching ID
   const expense = expenses.find((e) => e.id === id);

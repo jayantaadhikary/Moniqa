@@ -27,7 +27,8 @@ interface ExpenseState {
   addExpense: (expense: Expense) => void;
   editExpense: (id: string, updatedExpense: Expense) => void;
   deleteExpense: (id: string) => void;
-  updateBudget: (period: Period, amount: number) => void;
+  updateBudget: (period: Period, newTotal: number) => void; // Kept for settings
+  setInitialBudgetData: (monthlyBudgetTotal: number) => void; // Changed from setBudgetData
 
   // Calculations
   getFilteredExpenses: () => Expense[];
@@ -92,18 +93,36 @@ const useExpenseStore = create<ExpenseState>((set, get) => ({
     });
   },
 
-  updateBudget: (period, amount) => {
+  updateBudget: (period, newTotal) => {
     set((state) => {
       const updatedBudgetData = {
         ...state.budgetData,
         [period]: {
           ...state.budgetData[period],
-          total: amount,
+          total: newTotal, // Ensure this updates the total
         },
       };
       setItem("budgetData", JSON.stringify(updatedBudgetData));
       return { budgetData: updatedBudgetData };
     });
+  },
+
+  // Renamed and modified to accept only monthly total
+  setInitialBudgetData: (monthlyBudgetTotal: number) => {
+    const daysInMonth = 30.44; // Average days in a month
+    const weeksInMonth = daysInMonth / 7; // Average weeks in a month
+
+    const dailyBudgetTotal = monthlyBudgetTotal / daysInMonth;
+    const weeklyBudgetTotal = monthlyBudgetTotal / weeksInMonth;
+
+    const newBudgetData = {
+      Day: { spent: 0, total: parseFloat(dailyBudgetTotal.toFixed(2)) },
+      Week: { spent: 0, total: parseFloat(weeklyBudgetTotal.toFixed(2)) },
+      Month: { spent: 0, total: parseFloat(monthlyBudgetTotal.toFixed(2)) },
+    };
+
+    setItem("budgetData", JSON.stringify(newBudgetData));
+    set({ budgetData: newBudgetData });
   },
 
   // Calculations

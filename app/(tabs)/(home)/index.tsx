@@ -3,17 +3,13 @@ import { format } from "date-fns";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
   FlatList,
   Image,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   SafeAreaView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
@@ -21,11 +17,10 @@ import {
 import { ProgressBar } from "react-native-paper";
 import { AppColors } from "../../../constants/Colors";
 import useExpenseStore, { Period } from "../../../stores/useExpenseStore";
+import useUserPreferencesStore from "../../../stores/useUserPreferencesStore";
 
 const HomePage = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [isBudgetModalVisible, setIsBudgetModalVisible] = useState(false);
-  const [newBudget, setNewBudget] = useState("");
 
   // Use Zustand store instead of local state and functions
   const selectedPeriod = useExpenseStore((state) => state.selectedPeriod);
@@ -35,15 +30,13 @@ const HomePage = () => {
   const getFilteredExpenses = useExpenseStore(
     (state) => state.getFilteredExpenses
   );
-  const updateBudget = useExpenseStore((state) => state.updateBudget);
+  const { selectedCurrencySymbol } = useUserPreferencesStore();
 
   const spent = calculateSpent(selectedPeriod);
   const { total } = budgetData[selectedPeriod];
-  const progress = spent / total;
+  const progress = total > 0 ? spent / total : 0;
 
   const filteredExpenses = getFilteredExpenses();
-
-  // console.log("Filtered Expenses:", filteredExpenses);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -104,12 +97,11 @@ const HomePage = () => {
       <View style={styles.budgetCard}>
         <View style={styles.budgetHeader}>
           <Text style={styles.budgetTitle}>📅 {selectedPeriod} Budget</Text>
-          <TouchableOpacity onPress={() => setIsBudgetModalVisible(true)}>
-            <Ionicons name="pencil" size={20} color={AppColors.dark.text} />
-          </TouchableOpacity>
         </View>
         <Text style={styles.budgetDetails}>
-          💸 ${spent} spent of ${total}
+          💸 {selectedCurrencySymbol}
+          {spent.toFixed(2)} spent of {selectedCurrencySymbol}
+          {total.toFixed(2)}
         </Text>
         <Text
           style={[
@@ -120,8 +112,10 @@ const HomePage = () => {
           {spent === total
             ? `⚠️ Budget Limit reached!`
             : spent > total
-            ? `⚠️ Exceeded by $${(spent - total).toFixed(2)}`
-            : `✅ $${(total - spent).toFixed(2)} left`}
+            ? `⚠️ Exceeded by ${selectedCurrencySymbol}${(
+                spent - total
+              ).toFixed(2)}`
+            : `✅ ${selectedCurrencySymbol}${(total - spent).toFixed(2)} left`}
         </Text>
         <ProgressBar
           progress={progress}
@@ -129,57 +123,6 @@ const HomePage = () => {
           style={styles.progressBar}
         />
       </View>
-
-      {/* Budget Update Modal */}
-      <Modal
-        visible={isBudgetModalVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setIsBudgetModalVisible(false)}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={{ flex: 1 }}
-        >
-          <TouchableWithoutFeedback
-            onPress={() => setIsBudgetModalVisible(false)}
-          >
-            <View style={styles.bottomSheetContainer}>
-              <View style={styles.bottomSheetContent}>
-                <Text style={styles.modalTitle}>
-                  Update Budget for {selectedPeriod}
-                </Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter new budget"
-                  placeholderTextColor={AppColors.dark.secondaryText}
-                  keyboardType="numeric"
-                  value={newBudget}
-                  onChangeText={setNewBudget}
-                />
-                <TouchableOpacity
-                  style={styles.saveButton}
-                  onPress={() => {
-                    const parsedBudget = parseFloat(newBudget);
-                    if (!isNaN(parsedBudget) && parsedBudget > 0) {
-                      updateBudget(selectedPeriod, parsedBudget);
-                      setIsBudgetModalVisible(false);
-                      setNewBudget("");
-                    } else {
-                      Alert.alert(
-                        "Invalid Input",
-                        "Please enter a valid budget amount."
-                      );
-                    }
-                  }}
-                >
-                  <Text style={styles.saveButtonText}>Save</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </TouchableWithoutFeedback>
-        </KeyboardAvoidingView>
-      </Modal>
 
       {/* Recent Expenses Section */}
       <View style={styles.recentExpensesSection}>
@@ -190,24 +133,33 @@ const HomePage = () => {
           <FlatList
             data={filteredExpenses}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.expenseRow}
-                onPress={() => router.push(`/expense/${item.id}`)}
-              >
-                <Text style={styles.expenseIcon}>{item.emoji}</Text>
-                <View style={styles.expenseDetailsContainer}>
-                  <Text style={styles.expenseTitle}>{item.category}</Text>
-                  <Text style={styles.expenseDate}>
-                    {format(new Date(item.date), "dd MMM")}
+            renderItem={({ item }) => {
+              const amountAsNumber = parseFloat(item.amount);
+              const formattedAmount = !isNaN(amountAsNumber)
+                ? amountAsNumber.toFixed(2)
+                : "0.00"; // Fallback to 0.00 if parsing fails
+              return (
+                <TouchableOpacity
+                  style={styles.expenseRow}
+                  onPress={() => router.push(`/expense/${item.id}`)}
+                >
+                  <Text style={styles.expenseIcon}>{item.emoji}</Text>
+                  <View style={styles.expenseDetailsContainer}>
+                    <Text style={styles.expenseTitle}>{item.category}</Text>
+                    <Text style={styles.expenseDate}>
+                      {format(new Date(item.date), "dd MMM")}
+                    </Text>
+                    {item.note && (
+                      <Text style={styles.expenseNote}>{item.note}</Text>
+                    )}
+                  </View>
+                  <Text style={styles.expenseAmount}>
+                    {selectedCurrencySymbol}
+                    {formattedAmount}
                   </Text>
-                  {item.note && (
-                    <Text style={styles.expenseNote}>{item.note}</Text>
-                  )}
-                </View>
-                <Text style={styles.expenseAmount}>{item.amount}</Text>
-              </TouchableOpacity>
-            )}
+                </TouchableOpacity>
+              );
+            }}
             ItemSeparatorComponent={() => <View style={styles.divider} />}
           />
         ) : (

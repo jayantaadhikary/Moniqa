@@ -21,6 +21,9 @@ export const AppColors = {
     tabIconSelected: mintAccentLight,
     secondaryText: "#71717A", // Medium dark gray for secondary text
     brandHighlight: brandHighlightLight,
+    error: "#D32F2F", // Added error color for light theme
+    cardBackground: "#FFFFFF", // Added card background for light theme
+    border: "#E0E0E0", // Added border for light theme
   },
   dark: {
     text: "#FFFFFF", // Pure White for primary text
@@ -32,6 +35,9 @@ export const AppColors = {
     secondaryText: "#D1D1D6", // Light Gray for secondary text
     brandHighlight: brandHighlightDark,
     secondaryBackground: "#1e1e1e",
+    error: "#FF6B6B", // Added error color
+    cardBackground: "#2C2C2E", // Added card background (can be same as secondaryBackground or different)
+    border: "#3A3A3C", // Added border color
   },
 };
 

@@ -1,4 +1,3 @@
-// import DateTimePicker from "@react-native-community/datetimepicker";
 import { DateTimePicker as DateTimePickerAndroid } from "@expo/ui/jetpack-compose";
 import { DateTimePicker } from "@expo/ui/swift-ui";
 import { router } from "expo-router";
@@ -20,6 +19,7 @@ import { v4 as uuidv4 } from "uuid";
 import { AppColors } from "../../../constants/Colors";
 import useCategoryStore from "../../../stores/useCategoryStore";
 import useExpenseStore from "../../../stores/useExpenseStore";
+import useUserPreferencesStore from "../../../stores/useUserPreferencesStore";
 
 const InputPage = () => {
   const [amount, setAmount] = useState("");
@@ -30,16 +30,21 @@ const InputPage = () => {
   const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
   const [newCategory, setNewCategory] = useState("");
 
-  // Using Zustand store instead of context
-  const categoryIcons = useCategoryStore((state) => state.categoryIcons);
-  const addCategory = useCategoryStore((state) => state.addCategory);
+  // Using Zustand store
+  // Get userCategoryIcons which holds the user's selected default categories
+  const userCategoryIcons = useCategoryStore(
+    (state) => state.userCategoryIcons
+  );
+  const addCategoryToStore = useCategoryStore((state) => state.addCategory); // Renamed for clarity if used
   const addExpense = useExpenseStore((state) => state.addExpense);
+  const { selectedCurrencySymbol } = useUserPreferencesStore();
 
   const handleAddCategory = () => {
     if (newCategory.trim() && emoji) {
       console.log("Adding category:", newCategory, "with emoji:", emoji);
-      addCategory(newCategory, emoji);
-      setCategory(newCategory);
+      // This adds the new category to the user's list in the store
+      addCategoryToStore(newCategory, emoji);
+      setCategory(newCategory); // Set the current expense category to the new one
       setNewCategory("");
       setEmoji(null);
       setShowAddCategoryModal(false);
@@ -65,16 +70,17 @@ const InputPage = () => {
       id: uuidv4(),
       amount,
       category,
-      emoji: categoryIcons[category] || "❓",
+      // Use the emoji from userCategoryIcons, fallback if somehow not there
+      emoji: userCategoryIcons[category] || "❓",
       date: date.toISOString(),
       note,
     });
 
-    // Add logic to handle expense submission
     router.replace("/(tabs)/(home)");
   };
 
-  const categoryList = Object.keys(categoryIcons);
+  // Display categories from the user's selected defaults
+  const categoryList = Object.keys(userCategoryIcons);
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
@@ -90,7 +96,7 @@ const InputPage = () => {
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
-              placeholder="$0.00"
+              placeholder={`${selectedCurrencySymbol}0.00`}
               placeholderTextColor={AppColors.dark.secondaryText}
               keyboardType="numeric"
               value={amount}
@@ -143,7 +149,8 @@ const InputPage = () => {
               onPress={() => setCategory(item)}
             >
               <Text style={styles.categoryText}>
-                {categoryIcons[item]} {item}
+                {userCategoryIcons[item]} {item}{" "}
+                {/* Display emoji from userCategoryIcons */}
               </Text>
             </TouchableOpacity>
           ))}

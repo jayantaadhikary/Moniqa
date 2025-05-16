@@ -1,17 +1,8 @@
+import { Stack } from "expo-router";
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
-import { AppColors } from "../../../constants/Colors";
 
 const SettingsLayout = () => {
-  return (
-    <View style={styles.container}>
-      <Text>SettingsLayout</Text>
-    </View>
-  );
+  return <Stack screenOptions={{ headerShown: false }} />;
 };
 
 export default SettingsLayout;
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: AppColors.dark.background },
-});

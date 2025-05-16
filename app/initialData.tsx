@@ -17,6 +17,8 @@ import {
 import DropDownPicker from "react-native-dropdown-picker";
 import { AppColors } from "../constants/Colors";
 import useCategoryStore from "../stores/useCategoryStore";
+import useExpenseStore from "../stores/useExpenseStore";
+import useUserPreferencesStore from "../stores/useUserPreferencesStore"; // Import the new store
 
 const majorCurrencies = [
   { code: "USD", name: "United States Dollar", symbol: "$" },
@@ -48,39 +50,42 @@ const majorCurrencies = [
   { code: "PHP", name: "Philippine Peso", symbol: "₱" },
 ];
 
-const InitialData = () => {
+const InitialData: React.FC = () => {
   const [selectedCurrency, setSelectedCurrency] = useState<string>("USD");
   const [budget, setBudget] = useState<string>("");
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState<boolean>(false);
 
-  const categoryIcons = useCategoryStore((state) => state.categoryIcons);
-  const defaultCategories = Object.keys(categoryIcons);
+  const { masterCategoryIcons, setUserCategoryIcons } = useCategoryStore();
+  const { setInitialBudgetData } = useExpenseStore(); // Changed from setBudgetData
+  const { setSelectedCurrency: setSelectedCurrencyInStore } =
+    useUserPreferencesStore();
 
-  const handleCategorySelection = (category: string) => {
-    if (selectedCategories.includes(category)) {
-      setSelectedCategories(
-        selectedCategories.filter((cat) => cat !== category)
-      );
-    } else if (selectedCategories.length < 6) {
-      setSelectedCategories([...selectedCategories, category]);
-    } else {
-      Alert.alert(
-        "Limit Reached",
-        "You can only select up to 6 categories here. Add more later in settings."
-      );
-    }
+  const [allAvailableCategoryIcons] =
+    useState<Record<string, string>>(masterCategoryIcons);
+  const [userChosenDefaultCategories, setUserChosenDefaultCategories] =
+    useState<Record<string, string>>({});
+
+  const handleCategorySelection = (categoryName: string) => {
+    setUserChosenDefaultCategories((prevSelected) => {
+      const newSelected = { ...prevSelected };
+      if (newSelected[categoryName]) {
+        delete newSelected[categoryName];
+      } else {
+        if (Object.keys(newSelected).length < 6) {
+          newSelected[categoryName] = allAvailableCategoryIcons[categoryName];
+        }
+      }
+      return newSelected;
+    });
   };
 
   const handleBudgetChange = (value: string) => {
-    // Allow only numbers and a single decimal point
     const validValue = value
       .replace(/[^0-9.]/g, "")
       .replace(/(\..*?)\..*/g, "$1");
 
     if (validValue.length > 8) {
-      Alert.alert("Limit Reached", "Budget cannot exceed 10 digits.");
-      setBudget("");
+      Alert.alert("Limit Reached", "Budget cannot exceed 8 digits.");
       return;
     }
 
@@ -88,15 +93,64 @@ const InitialData = () => {
   };
 
   const handleProceed = () => {
-    if (!selectedCurrency || !budget || selectedCategories.length === 0) {
+    if (
+      !selectedCurrency ||
+      !budget ||
+      Object.keys(userChosenDefaultCategories).length === 0
+    ) {
       Alert.alert("Incomplete Setup", "Please fill all fields to proceed.");
       return;
     }
 
-    // Save data to store or backend here
+    const monthlyBudgetFloat = parseFloat(budget);
+    if (isNaN(monthlyBudgetFloat) || monthlyBudgetFloat <= 0) {
+      Alert.alert(
+        "Invalid Budget",
+        "Please enter a valid positive budget amount."
+      );
+      return;
+    }
+    if (budget.length > 8) {
+      Alert.alert("Limit Reached", "Budget cannot exceed 8 digits.");
+      return;
+    }
+
+    const currencyDetails = majorCurrencies.find(
+      (c) => c.code === selectedCurrency
+    );
+    const currentSymbol = currencyDetails ? currencyDetails.symbol : "$";
+    const currentCode = selectedCurrency;
+
+    setSelectedCurrencyInStore(currentCode, currentSymbol); // Update the store
+
+    setInitialBudgetData(monthlyBudgetFloat); // Using the new setInitialBudgetData action
+
+    setUserCategoryIcons(userChosenDefaultCategories);
 
     router.push("/(tabs)/(home)");
   };
+
+  const renderCategoryItem = ({
+    item,
+  }: {
+    item: { name: string; emoji: string };
+  }) => (
+    <TouchableOpacity
+      style={[
+        styles.categoryItem,
+        userChosenDefaultCategories[item.name] ? styles.selectedCategory : {},
+      ]}
+      onPress={() => handleCategorySelection(item.name)}
+    >
+      <Text style={styles.categoryText}>
+        {item.emoji} {item.name}
+      </Text>
+    </TouchableOpacity>
+  );
+
+  const categoriesForDisplay = Object.entries(allAvailableCategoryIcons).map(
+    ([name, emoji]) => ({ name, emoji })
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -108,7 +162,6 @@ const InitialData = () => {
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>Preferences 💰</Text>
 
-            {/* Currency Selection */}
             <Text style={styles.label}>Select Currency</Text>
             <DropDownPicker
               open={dropdownOpen}
@@ -123,9 +176,9 @@ const InitialData = () => {
               dropDownContainerStyle={styles.dropdownContainer}
               textStyle={{ color: AppColors.dark.text }}
               theme="DARK"
+              listMode="MODAL"
             />
 
-            {/* Budget Input */}
             <Text style={styles.label}>Set Your Monthly Budget</Text>
             <TextInput
               style={styles.input}
@@ -134,34 +187,22 @@ const InitialData = () => {
               value={budget}
               onChangeText={handleBudgetChange}
               placeholderTextColor={AppColors.dark.secondaryText}
+              maxLength={8}
             />
 
-            {/* Category Selection */}
-            <Text style={styles.label}>Choose Default Categories</Text>
+            <Text style={styles.label}>
+              Choose Default Categories (up to 6)
+            </Text>
             <FlatList
-              data={defaultCategories}
-              keyExtractor={(item) => item}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.categoryItem,
-                    selectedCategories.includes(item) &&
-                      styles.selectedCategory,
-                  ]}
-                  onPress={() => handleCategorySelection(item)}
-                >
-                  <Text style={styles.categoryText}>
-                    {categoryIcons[item]} {item}
-                  </Text>
-                </TouchableOpacity>
-              )}
+              data={categoriesForDisplay}
+              renderItem={renderCategoryItem}
+              keyExtractor={(item) => item.name}
               numColumns={2}
             />
             <Text style={styles.note}>
               You can customize or add more categories anytime in Settings.
             </Text>
 
-            {/* Proceed Button */}
             <TouchableOpacity
               style={styles.proceedButton}
               onPress={handleProceed}
@@ -203,7 +244,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   dropdownPicker: {
-    // backgroundColor: AppColors.dark.tint,
     backgroundColor: AppColors.dark.secondaryBackground,
     borderRadius: 8,
     marginBottom: 16,
@@ -217,7 +257,6 @@ const styles = StyleSheet.create({
     padding: 12,
     margin: 4,
     borderRadius: 8,
-    // backgroundColor: AppColors.dark.tint + "20",
     backgroundColor: AppColors.dark.secondaryBackground,
     alignItems: "center",
   },

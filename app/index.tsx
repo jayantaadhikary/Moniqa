@@ -21,7 +21,8 @@ const OnBoardingPage = () => {
   const insets = useSafeAreaInsets();
 
   const handleDone = () => {
-    router.replace("/initialData" as any);
+    router.replace("/(tabs)" as any);
+    // router.replace("/initialData" as any);
   };
 
   const DoneButton = ({ isLight, ...props }: any) => {
