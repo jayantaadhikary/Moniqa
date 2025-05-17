@@ -44,6 +44,11 @@ const InitialData: React.FC = () => {
       } else {
         if (Object.keys(newSelected).length < 6) {
           newSelected[categoryName] = allAvailableCategoryIcons[categoryName];
+        } else {
+          Alert.alert(
+            "Select only 6 categories",
+            "You can select or add more later in Settings."
+          );
         }
       }
       return newSelected;
@@ -81,8 +86,8 @@ const InitialData: React.FC = () => {
       );
       return;
     }
-    if (budget.length > 8) {
-      Alert.alert("Limit Reached", "Budget cannot exceed 8 digits.");
+    if (budget.length > 9) {
+      Alert.alert("Limit Reached", "Budget cannot exceed 10 digits.");
       return;
     }
 
@@ -171,7 +176,7 @@ const InitialData: React.FC = () => {
               numColumns={2}
             />
             <Text style={styles.note}>
-              You can customize or add more categories anytime in Settings.
+              You can customize these anytime in Settings.
             </Text>
 
             <TouchableOpacity
@@ -242,6 +247,7 @@ const styles = StyleSheet.create({
     color: AppColors.dark.secondaryText,
     marginTop: 8,
     textAlign: "center",
+    fontStyle: "italic",
   },
   proceedButton: {
     backgroundColor: AppColors.dark.tint,

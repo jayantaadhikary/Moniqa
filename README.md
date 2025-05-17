@@ -21,19 +21,43 @@
 
 - [x] Onboarding Screen
 - [x] Screen to choose a currency, budget and default categories
-- [x] Home Screen (Add Expense Button, View Budget Modal, View Expenses, Filter By Day/Week/Month, click on expense to edit/delete)
-- [ ] To think on what more features to add to the Home Screen and how to make it better and more user friendly (add income feature, make the budget box droppable to show income, expenses and savings)
+- [x] Home Screen
+
+  - [x] Add Expense
+  - [x] View Budget Card
+  - [x] View Expenses
+  - [x] Filter By Day/Week/Month
+  - [x] Click on expense to edit/delete
+  - [ ] Add a Toast after successful expense addition
+  - [ ] Swipe to delete expenses
+  - [ ] Add Income feature
+  - [ ] Make the budget card droppable to show income, expenses and savings
+
+- [ ] To think on what more features to add to the Home Screen and how to make it better and more user friendly
+
+- [ ] Summary & Analytics Screen
+
+  - [x] Basic UI for the summary screen
+  - [x] View spending by month, week and year.
+    - [ ] Add custom date range date picker
+  - [ ] Graphs for visualizing spending habits
+  - [ ] View spending by category
+  - [ ] View Spending compared to budget & income
+
+- [ ] To think on what more features to add to the Summary & Analytics Screen and how to make it better and more user friendly
+
 - [ ] Settings Screen
+
   - [x] Basic UI for the settings screen
   - [ ] App Settings
     - [x] Manage Currency
     - [x] Manage Budget
-    - [ ] Manage Categories (add & delete)
+    - [x] Manage Categories (add & delete)
     - [ ] Notification Reminder (gentle reminder & nudges to add expenses and save money)
     - [ ] More App Settings (to be decided)
   - [ ] Account Settings (just a placeholder for now (won't contain much data anyways as logging in through google/apple id any ways))
   - Help & Support (contact support (will consist of mailto link), About the app (Will be a screen about me, why i made this app, my other apps and social media links), Delete Account, Terms of Service, Privacy Policy)
-- [ ] Figure out the summary screen idea
+
 - [ ] Add Auth (Google, Apple) - Figure out which platform to use
 - [ ] Add App Lock
 - [ ] Add Notifications

@@ -1,17 +1,8 @@
+import { Stack } from "expo-router";
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
-import { AppColors } from "../../../constants/Colors";
 
 const SummaryPage = () => {
-  return (
-    <View style={styles.container}>
-      <Text>SummaryPage</Text>
-    </View>
-  );
+  return <Stack screenOptions={{ headerShown: false }} />;
 };
 
 export default SummaryPage;
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: AppColors.dark.background },
-});

@@ -9,13 +9,14 @@ const SettingsLayout = () => {
       <Stack.Screen
         name="manageCategories"
         options={{
-          presentation: "formSheet",
-          sheetAllowedDetents: [0.75, 1],
-          sheetGrabberVisible: true,
-          sheetCornerRadius: 30,
-          contentStyle: {
+          presentation: "card",
+          headerShown: true, // Enable the header
+          headerTitle: "Manage Categories", // Add a title
+          headerBackTitle: "Back", // Customize back button text
+          headerStyle: {
             backgroundColor: AppColors.dark.background,
           },
+          headerTintColor: AppColors.dark.text, // Set back button color
         }}
       />
       <Stack.Screen name="notificationSettings" />

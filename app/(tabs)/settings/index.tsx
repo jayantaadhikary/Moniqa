@@ -407,6 +407,7 @@ const SettingScreen = () => {
                 value={monthlyBudgetInput}
                 onChangeText={setMonthlyBudgetInput}
                 autoFocus
+                maxLength={10}
               />
             </View>
             <View style={styles.modalButtonContainer}>

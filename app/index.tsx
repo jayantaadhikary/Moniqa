@@ -98,7 +98,7 @@ const OnBoardingPage = () => {
                 </View>
               </View>
             ),
-            title: "Add expenses in just two taps.",
+            title: "Add expenses in few taps.",
             subtitle: "No spreadsheets. No clutter. Just log and go.",
           },
           {
