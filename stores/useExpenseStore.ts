@@ -1,3 +1,7 @@
+import {
+  endOfDay as dateFnsEndOfDay,
+  startOfWeek as dateFnsStartOfWeek,
+} from "date-fns";
 import { create } from "zustand";
 import mockExpenses from "../sampleData/mockExpenses";
 import { getItem, setItem } from "../utils/mmkv";
@@ -136,9 +140,11 @@ const useExpenseStore = create<ExpenseState>((set, get) => ({
         if (selectedPeriod === "Day") {
           return expenseDate.toDateString() === now.toDateString();
         } else if (selectedPeriod === "Week") {
-          const startOfWeek = new Date(now);
-          startOfWeek.setDate(now.getDate() - now.getDay());
-          return expenseDate >= startOfWeek && expenseDate <= now;
+          const startOfTheWeek = dateFnsStartOfWeek(now, { weekStartsOn: 0 }); // Sunday, 00:00:00
+          const endOfTheCurrentDay = dateFnsEndOfDay(now); // Current day, 23:59:59
+          return (
+            expenseDate >= startOfTheWeek && expenseDate <= endOfTheCurrentDay
+          );
         } else if (selectedPeriod === "Month") {
           return (
             expenseDate.getMonth() === now.getMonth() &&
@@ -159,9 +165,11 @@ const useExpenseStore = create<ExpenseState>((set, get) => ({
       if (period === "Day") {
         return expenseDate.toDateString() === now.toDateString();
       } else if (period === "Week") {
-        const startOfWeek = new Date(now);
-        startOfWeek.setDate(now.getDate() - now.getDay());
-        return expenseDate >= startOfWeek && expenseDate <= now;
+        const startOfTheWeek = dateFnsStartOfWeek(now, { weekStartsOn: 0 }); // Sunday, 00:00:00
+        const endOfTheCurrentDay = dateFnsEndOfDay(now); // Current day, 23:59:59
+        return (
+          expenseDate >= startOfTheWeek && expenseDate <= endOfTheCurrentDay
+        );
       } else if (period === "Month") {
         return (
           expenseDate.getMonth() === now.getMonth() &&

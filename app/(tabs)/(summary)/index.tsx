@@ -220,14 +220,13 @@ const SummaryPage = () => {
           <Text style={styles.sectionTitle}>Spending Trends</Text>
           <View style={styles.placeholderContent}>
             <Text style={styles.placeholderText}>
-              Charts for spending trends will be displayed here.
+              Spending trends will be shown here.
             </Text>
           </View>
         </View>
 
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Top Categories</Text>{" "}
-          {/* Renamed title */}
+          <Text style={styles.sectionTitle}>Top Categories</Text>
           {categorizedExpensesSummary.length > 0 ? (
             <FlatList
               data={categorizedExpensesSummary} // Already sliced to top 5
