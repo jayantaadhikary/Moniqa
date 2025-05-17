@@ -3,8 +3,18 @@ import useCategoryStore from "@/stores/useCategoryStore";
 import useExpenseStore, { Expense } from "@/stores/useExpenseStore";
 import useUserPreferencesStore from "@/stores/useUserPreferencesStore";
 import {
+  differenceInDays,
+  eachDayOfInterval,
+  eachMonthOfInterval,
+  eachWeekOfInterval,
   endOfDay,
+  endOfMonth,
+  endOfWeek,
   format,
+  isAfter,
+  isSameDay,
+  isSameMonth,
+  isSameYear,
   isWithinInterval,
   parseISO,
   startOfMonth,
@@ -13,6 +23,7 @@ import {
 } from "date-fns";
 import React, { useEffect, useState } from "react";
 import {
+  Dimensions,
   FlatList,
   Modal,
   Pressable,
@@ -24,6 +35,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { LineChart } from "react-native-gifted-charts";
 
 export type SummaryPeriodOption =
   | "This Week"
@@ -54,6 +66,15 @@ const SummaryPage = () => {
   const [categorizedExpensesSummary, setCategorizedExpensesSummary] = useState<
     CategorizedExpenseSummary[]
   >([]);
+  const [spendingTrendData, setSpendingTrendData] = useState<
+    { value: number; label: string; date?: string }[]
+  >([]);
+  const [dynamicChartSpacing, setDynamicChartSpacing] = useState(40);
+  const [dynamicInitialSpacing, setDynamicInitialSpacing] = useState(10);
+  const [dynamicEndSpacing, setDynamicEndSpacing] = useState(10);
+  const [dynamicRulesLength, setDynamicRulesLength] = useState<
+    number | undefined
+  >();
 
   useEffect(() => {
     const now = new Date();
@@ -139,9 +160,227 @@ const SummaryPage = () => {
       }));
 
       summaryArray.sort((a, b) => b.amount - a.amount);
-      setCategorizedExpensesSummary(summaryArray.slice(0, 5)); // Slice to get top 5
+      setCategorizedExpensesSummary(summaryArray.slice(0, 5));
+
+      let newTrendData: { value: number; label: string; date: string }[] = [];
+
+      switch (currentFilterPeriod) {
+        case "This Week":
+          const daysInWeek = eachDayOfInterval({
+            start: startDate,
+            end: endDate,
+          });
+          newTrendData = daysInWeek.map((day) => {
+            const dayExpenses = filtered.filter((exp) =>
+              isSameDay(parseISO(exp.date), day)
+            );
+            const sum = dayExpenses.reduce(
+              (acc, curr) => acc + parseFloat(curr.amount),
+              0
+            );
+            return {
+              value: sum,
+              label: format(day, "E"), // "Mon", "Tue"
+              date: format(day, "yyyy-MM-dd"),
+            };
+          });
+          break;
+
+        case "This Month":
+          const weeksInMonth = eachWeekOfInterval(
+            { start: startDate, end: endDate },
+            { weekStartsOn: 0 }
+          );
+          newTrendData = weeksInMonth.map((weekStart) => {
+            const weekActualEnd = endOfWeek(weekStart, { weekStartsOn: 0 });
+            const effectiveWeekEnd = isAfter(weekActualEnd, endDate)
+              ? endDate
+              : weekActualEnd;
+
+            const weekExpenses = filtered.filter((exp) => {
+              const expDate = parseISO(exp.date);
+              return isWithinInterval(expDate, {
+                start: weekStart,
+                end: effectiveWeekEnd,
+              });
+            });
+            const sum = weekExpenses.reduce(
+              (acc, curr) => acc + parseFloat(curr.amount),
+              0
+            );
+            return {
+              value: sum,
+              label: `W${format(weekStart, "w")}`,
+              date: format(weekStart, "yyyy-MM-dd"),
+            };
+          });
+          break;
+
+        case "This Year":
+          const monthsInYear = eachMonthOfInterval({
+            start: startDate,
+            end: endDate,
+          });
+          newTrendData = monthsInYear.map((monthStart) => {
+            const monthActualEnd = endOfMonth(monthStart);
+            const effectiveMonthEnd = isAfter(monthActualEnd, endDate)
+              ? endDate
+              : monthActualEnd;
+
+            const monthExpenses = filtered.filter((exp) => {
+              const expDate = parseISO(exp.date);
+              return (
+                isSameMonth(expDate, monthStart) &&
+                isSameYear(expDate, monthStart) &&
+                isWithinInterval(expDate, {
+                  start: monthStart,
+                  end: effectiveMonthEnd,
+                })
+              );
+            });
+            const sum = monthExpenses.reduce(
+              (acc, curr) => acc + parseFloat(curr.amount),
+              0
+            );
+            return {
+              value: sum,
+              label: format(monthStart, "MMM"),
+              date: format(monthStart, "yyyy-MM-dd"),
+            };
+          });
+          break;
+
+        case "Custom":
+          if (customStartDate && customEndDate) {
+            const duration = differenceInDays(endDate, startDate);
+            if (duration <= 31) {
+              const daysInCustom = eachDayOfInterval({
+                start: startDate,
+                end: endDate,
+              });
+              newTrendData = daysInCustom.map((day) => {
+                const dayExpenses = filtered.filter((exp) =>
+                  isSameDay(parseISO(exp.date), day)
+                );
+                const sum = dayExpenses.reduce(
+                  (acc, curr) => acc + parseFloat(curr.amount),
+                  0
+                );
+                return {
+                  value: sum,
+                  label: format(day, "d"),
+                  date: format(day, "yyyy-MM-dd"),
+                };
+              });
+            } else if (duration <= 92) {
+              const weeksInCustom = eachWeekOfInterval(
+                { start: startDate, end: endDate },
+                { weekStartsOn: 0 }
+              );
+              newTrendData = weeksInCustom.map((weekStart) => {
+                const weekActualEnd = endOfWeek(weekStart, { weekStartsOn: 0 });
+                const effectiveWeekEnd = isAfter(weekActualEnd, endDate)
+                  ? endDate
+                  : weekActualEnd;
+                const weekExpenses = filtered.filter((exp) =>
+                  isWithinInterval(parseISO(exp.date), {
+                    start: weekStart,
+                    end: effectiveWeekEnd,
+                  })
+                );
+                const sum = weekExpenses.reduce(
+                  (acc, curr) => acc + parseFloat(curr.amount),
+                  0
+                );
+                return {
+                  value: sum,
+                  label: `W${format(weekStart, "w")}`,
+                  date: format(weekStart, "yyyy-MM-dd"),
+                };
+              });
+            } else {
+              const monthsInCustom = eachMonthOfInterval({
+                start: startDate,
+                end: endDate,
+              });
+              newTrendData = monthsInCustom.map((monthStart) => {
+                const monthActualEnd = endOfMonth(monthStart);
+                const effectiveMonthEnd = isAfter(monthActualEnd, endDate)
+                  ? endDate
+                  : monthActualEnd;
+                const monthExpenses = filtered.filter((exp) =>
+                  isWithinInterval(parseISO(exp.date), {
+                    start: monthStart,
+                    end: effectiveMonthEnd,
+                  })
+                );
+                const sum = monthExpenses.reduce(
+                  (acc, curr) => acc + parseFloat(curr.amount),
+                  0
+                );
+                return {
+                  value: sum,
+                  label: format(monthStart, "MMM yy"),
+                  date: format(monthStart, "yyyy-MM-dd"),
+                };
+              });
+            }
+          }
+          break;
+      }
+      setSpendingTrendData(newTrendData);
+
+      if (newTrendData.length > 0) {
+        const screenWidth = Dimensions.get("window").width;
+        const horizontalPadding = 20 * 2 + 15 * 2;
+        const yAxisLabelSpace = 40;
+        const chartAvailableWidth =
+          screenWidth - horizontalPadding - yAxisLabelSpace;
+
+        setDynamicRulesLength(chartAvailableWidth);
+
+        const numberOfPoints = newTrendData.length;
+
+        let calculatedSpacing = chartAvailableWidth / (numberOfPoints || 1);
+
+        const minSpacing = 30;
+        const maxSpacing = 120;
+        calculatedSpacing = Math.max(
+          minSpacing,
+          Math.min(maxSpacing, calculatedSpacing)
+        );
+
+        if (
+          numberOfPoints * calculatedSpacing < chartAvailableWidth * 0.8 &&
+          numberOfPoints > 1
+        ) {
+          calculatedSpacing = (chartAvailableWidth * 0.8) / numberOfPoints;
+        }
+
+        const initialSpacing =
+          calculatedSpacing / 3 < 10 ? 10 : calculatedSpacing / 3;
+        const endSpacing =
+          calculatedSpacing / 3 < 10 ? 10 : calculatedSpacing / 3;
+
+        if (numberOfPoints === 1) {
+          const singlePointSpacing = chartAvailableWidth / 3;
+          setDynamicChartSpacing(singlePointSpacing);
+          setDynamicInitialSpacing(singlePointSpacing);
+          setDynamicEndSpacing(singlePointSpacing);
+        } else {
+          setDynamicChartSpacing(calculatedSpacing);
+          setDynamicInitialSpacing(initialSpacing);
+          setDynamicEndSpacing(endSpacing);
+        }
+      } else {
+        setDynamicChartSpacing(40);
+        setDynamicInitialSpacing(10);
+        setDynamicEndSpacing(10);
+        setDynamicRulesLength(undefined);
+      }
     } else {
       setCategorizedExpensesSummary([]);
+      setSpendingTrendData([]);
     }
   }, [
     expenses,
@@ -218,11 +457,44 @@ const SummaryPage = () => {
 
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Spending Trends</Text>
-          <View style={styles.placeholderContent}>
-            <Text style={styles.placeholderText}>
-              Spending trends will be shown here.
-            </Text>
-          </View>
+          {calculatedTotalExpenses > 0 && spendingTrendData.length > 0 ? (
+            <LineChart
+              data={spendingTrendData}
+              height={200}
+              spacing={dynamicChartSpacing}
+              initialSpacing={dynamicInitialSpacing}
+              endSpacing={dynamicEndSpacing}
+              color={AppColors.dark.primary}
+              textColor={AppColors.dark.text}
+              dataPointsColor={AppColors.dark.primary}
+              textFontSize={10}
+              yAxisTextStyle={{
+                color: AppColors.dark.secondaryText,
+                fontSize: 10,
+              }}
+              xAxisLabelTextStyle={{
+                color: AppColors.dark.secondaryText,
+                fontSize: 10,
+                textAlign: "center",
+              }}
+              yAxisThickness={0}
+              xAxisThickness={1}
+              xAxisColor={AppColors.dark.border}
+              yAxisOffset={0}
+              rulesLength={dynamicRulesLength}
+              rulesColor={AppColors.dark.border}
+              yAxisLabelWidth={35}
+              // paddingRight={15}
+            />
+          ) : (
+            <View style={styles.placeholderContent}>
+              <Text style={styles.placeholderText}>
+                {calculatedTotalExpenses === 0
+                  ? "No spending data for the selected period."
+                  : "Not enough data to display trends."}
+              </Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.sectionCard}>

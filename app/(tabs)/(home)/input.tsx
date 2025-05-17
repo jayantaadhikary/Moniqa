@@ -1,8 +1,10 @@
 import { DateTimePicker as DateTimePickerAndroid } from "@expo/ui/jetpack-compose";
 import { DateTimePicker } from "@expo/ui/swift-ui";
+import { isFuture } from "date-fns"; // Added isFuture from date-fns
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
+  Alert, // Added Alert
   Keyboard,
   Modal,
   Platform,
@@ -55,14 +57,23 @@ const InputPage = () => {
 
   const handleExpenseSubmit = () => {
     if (!amount || !category) {
-      console.log("Amount or category is missing.");
+      Alert.alert("Missing Information", "Amount and category are required."); // Updated Alert message
       return;
     }
 
     // validate amount
     const parsedAmount = parseFloat(amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      console.log("Invalid amount.");
+      Alert.alert("Invalid Amount", "Please enter a valid positive amount."); // Updated Alert message
+      return;
+    }
+
+    // Validate date - prevent future dates
+    if (isFuture(date)) {
+      Alert.alert(
+        "Invalid Date",
+        "Future dates are not allowed for expenses. Please select a current or past date."
+      );
       return;
     }
 

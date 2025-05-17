@@ -12,6 +12,7 @@ import {
 } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
+import { isFuture } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -69,6 +70,15 @@ const ExpenseDetailScreen = () => {
     const parsedAmount = parseFloat(amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
       Alert.alert("Error", "Please enter a valid amount");
+      return;
+    }
+
+    // Validate date - prevent future dates
+    if (isFuture(date)) {
+      Alert.alert(
+        "Invalid Date",
+        "Future dates are not allowed for expenses. Please select a current or past date."
+      );
       return;
     }
 

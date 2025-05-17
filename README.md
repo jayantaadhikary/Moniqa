@@ -40,7 +40,7 @@
   - [x] Basic UI for the summary screen
   - [x] View spending by month, week and year.
     - [ ] Add custom date range date picker
-  - [ ] Graphs for visualizing spending habits
+  - [x] Graphs for visualizing spending habits
   - [x] View top spendings by category
   - [ ] View Spending compared to budget & income
 
@@ -71,7 +71,7 @@
 2. Export Data (CSV, PDF)
 3. Advanced Budgetting Features
 4. Advanced Analytics
-5. Ad Free
+5. Recurring & Scheduled Expenses
 6. Custom Logos & Widgets
 7. AI Integration (Maybe 🤷‍♂️ )
 8. Support an indie developer ❤️
