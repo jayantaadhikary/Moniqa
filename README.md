@@ -22,10 +22,15 @@
 - [x] Onboarding Screen
 - [x] Screen to choose a currency, budget and default categories
 - [x] Home Screen (Add Expense Button, View Budget Modal, View Expenses, Filter By Day/Week/Month, click on expense to edit/delete)
-- [ ] To think on what more features to add to the Home Screen and how to make it better and more user friendly
+- [ ] To think on what more features to add to the Home Screen and how to make it better and more user friendly (add income feature, make the budget box droppable to show income, expenses and savings)
 - [ ] Settings Screen
   - [x] Basic UI for the settings screen
-  - [ ] App Settings - Manage Currency, Budget, Categories (add & delete), notification reminder, clear data
+  - [ ] App Settings
+    - [x] Manage Currency
+    - [ ] Manage Budget
+    - [ ] Manage Categories (add & delete)
+    - [ ] Notification Reminder (gentle reminder & nudges to add expenses and save money)
+    - [ ] More App Settings (to be decided)
   - [ ] Account Settings (just a placeholder for now (won't contain much data anyways as logging in through google/apple id any ways))
   - Help & Support (contact support (will consist of mailto link), About the app (Will be a screen about me, why i made this app, my other apps and social media links), Delete Account, Terms of Service, Privacy Policy)
 - [ ] Figure out the summary screen idea

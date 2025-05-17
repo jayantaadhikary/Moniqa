@@ -1,7 +1,5 @@
-import { AppColors } from "@/constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import React from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Linking,
@@ -12,8 +10,17 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import DropDownPicker from "react-native-dropdown-picker";
+import { useShallow } from "zustand/react/shallow";
+import { AppColors } from "../../../constants/Colors";
+import {
+  Currency,
+  getCurrencySymbol,
+  majorCurrencies,
+} from "../../../constants/currencies";
+import useUserPreferencesStore from "../../../stores/useUserPreferencesStore";
 
-interface SettingItem {
+interface SettingItemOption {
   id: string;
   title: string;
   icon: keyof typeof Ionicons.glyphMap;
@@ -23,18 +30,40 @@ interface SettingItem {
   value?: string;
 }
 
-interface SettingsGroup {
+interface SettingsGroupData {
   id: string;
   title: string;
-  options: SettingItem[];
+  options: SettingItemOption[];
 }
 
 const SettingScreen = () => {
-  const router = useRouter();
+  const [currencyPickerOpen, setCurrencyPickerOpen] = useState(false);
 
-  // Placeholder actions - to be implemented later
-  const handleManageCurrency = () =>
-    console.log("Navigate to /settings/manage-currency (Placeholder)");
+  const { selectedCurrencyCode, setSelectedCurrency, loadCurrency } =
+    useUserPreferencesStore(
+      useShallow((state) => ({
+        selectedCurrencyCode: state.selectedCurrencyCode,
+        setSelectedCurrency: state.setSelectedCurrency,
+        loadCurrency: state.loadCurrency,
+      }))
+    );
+
+  useEffect(() => {
+    loadCurrency();
+  }, [loadCurrency]);
+
+  const [currentPickerValue, setCurrentPickerValue] =
+    useState(selectedCurrencyCode);
+
+  useEffect(() => {
+    setCurrentPickerValue(selectedCurrencyCode);
+  }, [selectedCurrencyCode]);
+
+  const handleManageCurrencyClick = useCallback(() => {
+    setCurrentPickerValue(selectedCurrencyCode);
+    setCurrencyPickerOpen(true);
+  }, [selectedCurrencyCode]);
+
   const handleManageBudget = () =>
     console.log("Navigate to /settings/manage-budget (Placeholder)");
   const handleManageCategories = () =>
@@ -42,7 +71,6 @@ const SettingScreen = () => {
   const handleNotificationReminders = () =>
     console.log("Navigate to Notification Reminders (Placeholder)");
 
-  // Renamed to be specific to clearing only expenses
   const handleFreshStart = () => {
     Alert.alert(
       "Fresh Start",
@@ -52,13 +80,12 @@ const SettingScreen = () => {
         {
           text: "Clear Expenses",
           style: "destructive",
-          onPress: () => console.log("All expense data cleared (Placeholder)"), // Later, this will call a specific store action
+          onPress: () => console.log("All expense data cleared (Placeholder)"),
         },
       ]
     );
   };
 
-  // This will clear ALL app data
   const handleDeleteAccountAndData = () => {
     Alert.alert(
       "Delete Account & All Data",
@@ -68,7 +95,7 @@ const SettingScreen = () => {
         {
           text: "Delete Everything",
           style: "destructive",
-          onPress: () => console.log("All app data cleared (Placeholder)"), // Later, this will clear MMKV and reset stores
+          onPress: () => console.log("All app data cleared (Placeholder)"),
         },
       ]
     );
@@ -76,24 +103,47 @@ const SettingScreen = () => {
 
   const handleAccountSettings = () =>
     console.log("Navigate to Account Settings (Placeholder)");
-  const handleContactSupport = () =>
-    Linking.openURL("mailto:jayadky@yahoo.com"); // Replace with actual email
+
+  const handleContactSupport = async () => {
+    const email = "jayadky@yahoo.com";
+    const subject = "Moniqa App Support";
+    const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}`;
+
+    try {
+      const canOpen = await Linking.canOpenURL(mailtoUrl);
+      if (canOpen) {
+        await Linking.openURL(mailtoUrl);
+      } else {
+        Alert.alert(
+          "Cannot open email app",
+          "No email application is available to handle this request."
+        );
+      }
+    } catch (error) {
+      console.error("Failed to open mailto link", error);
+      Alert.alert(
+        "Failed to open email app",
+        "Please send an email to jayadky@yahoo.com for support or feedbacks"
+      );
+    }
+  };
+
   const handleAboutApp = () =>
     console.log("Navigate to /settings/about-app (Placeholder)");
 
   const handleUpgrade = () =>
     console.log("Navigate to Upgrade Screen (Placeholder)");
 
-  const settingsData: SettingsGroup[] = [
+  const settingsData: SettingsGroupData[] = [
     {
       id: "appSettings",
       title: "App Settings",
       options: [
         {
           id: "currency",
-          title: "Manage Currency",
+          title: `Manage Currency (${getCurrencySymbol(selectedCurrencyCode)})`,
           icon: "cash-outline",
-          action: handleManageCurrency,
+          action: handleManageCurrencyClick,
         },
         {
           id: "budget",
@@ -163,14 +213,14 @@ const SettingScreen = () => {
           id: "freshStart",
           title: "Need a fresh start? (Clear Expenses)",
           icon: "refresh-circle-outline",
-          action: handleFreshStart, // New handler for clearing only expenses
+          action: handleFreshStart,
         },
         {
           id: "deleteAccountAndData",
           title: "Delete Account & All Data",
           icon: "trash-bin-outline",
-          action: handleDeleteAccountAndData, // New handler for clearing all data
-          color: AppColors.dark.error, // Keep red for this more destructive action
+          action: handleDeleteAccountAndData,
+          color: AppColors.dark.error,
         },
       ],
     },
@@ -178,7 +228,10 @@ const SettingScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollViewContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollViewContent}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.mainHeaderTitle}>Settings</Text>
 
         {settingsData.map((group) => (
@@ -194,40 +247,107 @@ const SettingScreen = () => {
                       styles.lastSettingItem,
                   ]}
                   onPress={item.action}
+                  disabled={item.isPlaceholder}
                 >
                   <Ionicons
                     name={item.icon}
-                    size={24}
-                    color={item.color || AppColors.dark.text}
+                    size={22}
+                    color={
+                      item.color ||
+                      (item.isPlaceholder
+                        ? AppColors.dark.secondaryText
+                        : AppColors.dark.text)
+                    }
                     style={styles.icon}
                   />
                   <View style={styles.settingTextContainer}>
                     <Text
                       style={[
                         styles.settingText,
-                        { color: item.color || AppColors.dark.text },
+                        {
+                          color:
+                            item.color ||
+                            (item.isPlaceholder
+                              ? AppColors.dark.secondaryText
+                              : AppColors.dark.text),
+                        },
                       ]}
                     >
                       {item.title}
                     </Text>
-                    {item.value && (
-                      <Text style={styles.settingValueText}>{item.value}</Text>
+                    {item.isPlaceholder && (
+                      <Text style={styles.placeholderText}>(Coming Soon)</Text>
+                    )}
+                    {!item.isPlaceholder && (
+                      <Ionicons
+                        name={
+                          item.id === "currency"
+                            ? "chevron-down-outline"
+                            : "chevron-forward-outline"
+                        }
+                        size={20}
+                        color={AppColors.dark.secondaryText}
+                      />
                     )}
                   </View>
-                  {item.isPlaceholder && (
-                    <Text style={styles.placeholderText}>(Coming Soon)</Text>
-                  )}
-                  <Ionicons
-                    name="chevron-forward-outline"
-                    size={22}
-                    color={AppColors.dark.secondaryText}
-                  />
                 </TouchableOpacity>
               ))}
             </View>
           </View>
         ))}
       </ScrollView>
+
+      {currencyPickerOpen && (
+        <DropDownPicker
+          open={currencyPickerOpen}
+          value={currentPickerValue}
+          items={majorCurrencies.map((curr: Currency) => ({
+            label: `${curr.label} (${curr.symbol})`,
+            value: curr.value,
+          }))}
+          setOpen={setCurrencyPickerOpen}
+          setValue={setCurrentPickerValue}
+          onSelectItem={(item) => {
+            if (item && item.value) {
+              const selected = majorCurrencies.find(
+                (c) => c.value === item.value
+              );
+              if (selected) {
+                setSelectedCurrency(selected.value, selected.symbol);
+              }
+            }
+          }}
+          listMode="MODAL"
+          placeholder="Select a currency"
+          theme="DARK"
+          style={[
+            styles.dropdownPicker,
+            {
+              backgroundColor: AppColors.dark.cardBackground,
+              borderColor: AppColors.dark.border,
+            },
+          ]}
+          textStyle={{ color: AppColors.dark.text }}
+          dropDownContainerStyle={[
+            styles.dropdownContainerStyle,
+            {
+              backgroundColor: AppColors.dark.cardBackground,
+              borderColor: AppColors.dark.border,
+            },
+          ]}
+          listItemLabelStyle={{ color: AppColors.dark.text }}
+          selectedItemLabelStyle={{ color: AppColors.dark.primary }}
+          modalProps={{
+            animationType: "slide",
+          }}
+          modalContentContainerStyle={{
+            backgroundColor: AppColors.dark.cardBackground,
+          }}
+          placeholderStyle={{ color: AppColors.dark.secondaryText }}
+          zIndex={3000}
+          zIndexInverse={1000}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -241,6 +361,7 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     paddingVertical: 20,
+    paddingBottom: 50,
   },
   mainHeaderTitle: {
     fontSize: 32,
@@ -264,6 +385,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginHorizontal: 16,
     overflow: "hidden",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: AppColors.dark.border,
   },
   settingItem: {
     flexDirection: "row",
@@ -286,18 +409,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   settingText: {
-    fontSize: 15,
-    color: AppColors.dark.text,
-  },
-  settingValueText: {
     fontSize: 16,
-    color: AppColors.dark.secondaryText,
-    marginRight: 8,
   },
   placeholderText: {
-    fontSize: 12,
+    fontSize: 14,
     color: AppColors.dark.secondaryText,
     fontStyle: "italic",
-    marginRight: 8,
+    marginLeft: 8,
+  },
+  dropdownPicker: {
+    borderWidth: 1,
+    borderRadius: 8,
+  },
+  dropdownContainerStyle: {
+    borderWidth: 1,
+    borderRadius: 8,
   },
 });

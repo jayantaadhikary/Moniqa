@@ -16,39 +16,10 @@ import {
 } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
 import { AppColors } from "../constants/Colors";
+import { Currency, majorCurrencies } from "../constants/currencies"; // Import from constants
 import useCategoryStore from "../stores/useCategoryStore";
 import useExpenseStore from "../stores/useExpenseStore";
 import useUserPreferencesStore from "../stores/useUserPreferencesStore"; // Import the new store
-
-const majorCurrencies = [
-  { code: "USD", name: "United States Dollar", symbol: "$" },
-  { code: "INR", name: "Indian Rupee", symbol: "₹" },
-  { code: "EUR", name: "Euro", symbol: "€" },
-  { code: "JPY", name: "Japanese Yen", symbol: "¥" },
-  { code: "GBP", name: "British Pound Sterling", symbol: "£" },
-  { code: "AUD", name: "Australian Dollar", symbol: "A$" },
-  { code: "CAD", name: "Canadian Dollar", symbol: "C$" },
-  { code: "CHF", name: "Swiss Franc", symbol: "CHF" },
-  { code: "CNY", name: "Chinese Yuan Renminbi", symbol: "¥" },
-  { code: "HKD", name: "Hong Kong Dollar", symbol: "HK$" },
-  { code: "NZD", name: "New Zealand Dollar", symbol: "NZ$" },
-  { code: "SGD", name: "Singapore Dollar", symbol: "S$" },
-  { code: "KRW", name: "South Korean Won", symbol: "₩" },
-  { code: "SEK", name: "Swedish Krona", symbol: "kr" },
-  { code: "NOK", name: "Norwegian Krone", symbol: "kr" },
-  { code: "DKK", name: "Danish Krone", symbol: "kr" },
-  { code: "ZAR", name: "South African Rand", symbol: "R" },
-  { code: "BRL", name: "Brazilian Real", symbol: "R$" },
-  { code: "MXN", name: "Mexican Peso", symbol: "$" },
-  { code: "RUB", name: "Russian Ruble", symbol: "₽" },
-  { code: "TRY", name: "Turkish Lira", symbol: "₺" },
-  { code: "AED", name: "UAE Dirham", symbol: "د.إ" },
-  { code: "SAR", name: "Saudi Riyal", symbol: "﷼" },
-  { code: "THB", name: "Thai Baht", symbol: "฿" },
-  { code: "MYR", name: "Malaysian Ringgit", symbol: "RM" },
-  { code: "IDR", name: "Indonesian Rupiah", symbol: "Rp" },
-  { code: "PHP", name: "Philippine Peso", symbol: "₱" },
-];
 
 const InitialData: React.FC = () => {
   const [selectedCurrency, setSelectedCurrency] = useState<string>("USD");
@@ -116,7 +87,7 @@ const InitialData: React.FC = () => {
     }
 
     const currencyDetails = majorCurrencies.find(
-      (c) => c.code === selectedCurrency
+      (c: Currency) => c.value === selectedCurrency // Use .value for comparison
     );
     const currentSymbol = currencyDetails ? currencyDetails.symbol : "$";
     const currentCode = selectedCurrency;
@@ -166,9 +137,9 @@ const InitialData: React.FC = () => {
             <DropDownPicker
               open={dropdownOpen}
               value={selectedCurrency}
-              items={majorCurrencies.map((currency) => ({
-                label: `${currency.symbol} - ${currency.name}`,
-                value: currency.code,
+              items={majorCurrencies.map((currency: Currency) => ({
+                label: `${currency.symbol} - ${currency.label}`, // Use .label and .symbol
+                value: currency.value, // Use .value
               }))}
               setOpen={setDropdownOpen}
               setValue={setSelectedCurrency}

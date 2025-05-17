@@ -21,9 +21,10 @@ export const AppColors = {
     tabIconSelected: mintAccentLight,
     secondaryText: "#71717A", // Medium dark gray for secondary text
     brandHighlight: brandHighlightLight,
-    error: "#D32F2F", // Added error color for light theme
-    cardBackground: "#FFFFFF", // Added card background for light theme
-    border: "#E0E0E0", // Added border for light theme
+    error: "#D32F2F",
+    cardBackground: "#FFFFFF",
+    border: "#E0E0E0",
+    primary: mintAccentLight, // Added for completeness, though tint is often used
   },
   dark: {
     text: "#FFFFFF", // Pure White for primary text
@@ -35,9 +36,10 @@ export const AppColors = {
     secondaryText: "#D1D1D6", // Light Gray for secondary text
     brandHighlight: brandHighlightDark,
     secondaryBackground: "#1e1e1e",
-    error: "#FF6B6B", // Added error color
-    cardBackground: "#2C2C2E", // Added card background (can be same as secondaryBackground or different)
-    border: "#3A3A3C", // Added border color
+    error: "#FF6B6B",
+    cardBackground: "#2C2C2E",
+    border: "#3A3A3C",
+    primary: mintAccentDark, // Added for completeness
   },
 };
 
@@ -46,41 +48,41 @@ export const Colors = {
   light: {
     dark: false,
     colors: {
-      primary: mintAccentLight,
-      background: "#FFFFFF",
-      card: "#FFFFFF",
-      text: "#0D0D0D",
-      border: "#E5E5E5",
-      notification: mintAccentLight,
-      // Custom colors
-      icon: "#687076",
-      tabIconDefault: "#687076",
-      tabIconSelected: mintAccentLight,
-      secondaryText: "#71717A",
-      brandHighlight: brandHighlightLight,
-      tint: mintAccentLight,
+      primary: AppColors.light.primary,
+      background: AppColors.light.background,
+      card: AppColors.light.cardBackground,
+      text: AppColors.light.text,
+      border: AppColors.light.border,
+      notification: AppColors.light.tint, // Or specific notification color
+      // Custom colors propagated to the theme
+      icon: AppColors.light.icon,
+      tabIconDefault: AppColors.light.tabIconDefault,
+      tabIconSelected: AppColors.light.tabIconSelected,
+      secondaryText: AppColors.light.secondaryText,
+      brandHighlight: AppColors.light.brandHighlight,
+      tint: AppColors.light.tint,
+      error: AppColors.light.error,
     },
-    // Default empty fonts object as required by react-navigation
     fonts: {},
   },
   dark: {
     dark: true,
     colors: {
-      primary: mintAccentDark,
-      background: "#0D0D0D",
-      card: "#0D0D0D",
-      text: "#FFFFFF",
-      border: "#2A2A2A",
-      notification: mintAccentDark,
-      // Custom colors
-      icon: "#D1D1D6",
-      tabIconDefault: "#D1D1D6",
-      tabIconSelected: mintAccentDark,
-      secondaryText: "#D1D1D6",
-      brandHighlight: brandHighlightDark,
-      tint: mintAccentDark,
+      primary: AppColors.dark.primary,
+      background: AppColors.dark.background,
+      card: AppColors.dark.cardBackground,
+      text: AppColors.dark.text,
+      border: AppColors.dark.border,
+      notification: AppColors.dark.tint, // Or specific notification color
+      // Custom colors propagated to the theme
+      icon: AppColors.dark.icon,
+      tabIconDefault: AppColors.dark.tabIconDefault,
+      tabIconSelected: AppColors.dark.tabIconSelected,
+      secondaryText: AppColors.dark.secondaryText,
+      brandHighlight: AppColors.dark.brandHighlight,
+      tint: AppColors.dark.tint,
+      error: AppColors.dark.error,
     },
-    // Default empty fonts object as required by react-navigation
     fonts: {},
   },
 };
