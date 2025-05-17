@@ -3,10 +3,12 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Linking,
+  Modal,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -18,6 +20,7 @@ import {
   getCurrencySymbol,
   majorCurrencies,
 } from "../../../constants/currencies";
+import useExpenseStore from "../../../stores/useExpenseStore";
 import useUserPreferencesStore from "../../../stores/useUserPreferencesStore";
 
 interface SettingItemOption {
@@ -38,6 +41,8 @@ interface SettingsGroupData {
 
 const SettingScreen = () => {
   const [currencyPickerOpen, setCurrencyPickerOpen] = useState(false);
+  const [budgetModalVisible, setBudgetModalVisible] = useState(false);
+  const [monthlyBudgetInput, setMonthlyBudgetInput] = useState("");
 
   const { selectedCurrencyCode, setSelectedCurrency, loadCurrency } =
     useUserPreferencesStore(
@@ -52,6 +57,19 @@ const SettingScreen = () => {
     loadCurrency();
   }, [loadCurrency]);
 
+  const { budgetData, setInitialBudgetData } = useExpenseStore(
+    useShallow((state) => ({
+      budgetData: state.budgetData,
+      setInitialBudgetData: state.setInitialBudgetData,
+    }))
+  );
+
+  useEffect(() => {
+    if (budgetData.Month.total) {
+      setMonthlyBudgetInput(budgetData.Month.total.toString());
+    }
+  }, [budgetData.Month.total]);
+
   const [currentPickerValue, setCurrentPickerValue] =
     useState(selectedCurrencyCode);
 
@@ -64,8 +82,24 @@ const SettingScreen = () => {
     setCurrencyPickerOpen(true);
   }, [selectedCurrencyCode]);
 
-  const handleManageBudget = () =>
-    console.log("Navigate to /settings/manage-budget (Placeholder)");
+  const handleManageBudgetClick = () => {
+    setMonthlyBudgetInput(budgetData.Month.total.toString());
+    setBudgetModalVisible(true);
+  };
+
+  const handleSaveBudget = () => {
+    const newMonthlyBudget = parseFloat(monthlyBudgetInput);
+    if (!isNaN(newMonthlyBudget) && newMonthlyBudget > 0) {
+      setInitialBudgetData(newMonthlyBudget);
+      setBudgetModalVisible(false);
+    } else {
+      Alert.alert(
+        "Invalid Input",
+        "Please enter a valid positive number for the budget."
+      );
+    }
+  };
+
   const handleManageCategories = () =>
     console.log("Navigate to /settings/manage-categories (Placeholder)");
   const handleNotificationReminders = () =>
@@ -149,7 +183,7 @@ const SettingScreen = () => {
           id: "budget",
           title: "Manage Budget",
           icon: "calculator-outline",
-          action: handleManageBudget,
+          action: handleManageBudgetClick,
         },
         {
           id: "categories",
@@ -234,11 +268,11 @@ const SettingScreen = () => {
       >
         <Text style={styles.mainHeaderTitle}>Settings</Text>
 
-        {settingsData.map((group) => (
+        {settingsData.map((group: SettingsGroupData) => (
           <View key={group.id} style={styles.groupContainer}>
             <Text style={styles.groupHeaderTitle}>{group.title}</Text>
             <View style={styles.settingsGroupCard}>
-              {group.options.map((item, index) => (
+              {group.options.map((item: SettingItemOption, index: number) => (
                 <TouchableOpacity
                   key={item.id}
                   style={[
@@ -348,6 +382,49 @@ const SettingScreen = () => {
           zIndexInverse={1000}
         />
       )}
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={budgetModalVisible}
+        onRequestClose={() => {
+          setBudgetModalVisible(!budgetModalVisible);
+        }}
+      >
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <Text style={styles.modalTitle}>Set Monthly Budget</Text>
+            <View style={styles.inputContainer}>
+              <Text style={styles.currencySymbolModal}>
+                {getCurrencySymbol(selectedCurrencyCode)}
+              </Text>
+              <TextInput
+                style={styles.modalTextInput}
+                placeholder="e.g., 5000"
+                placeholderTextColor={AppColors.dark.secondaryText}
+                keyboardType="numeric"
+                value={monthlyBudgetInput}
+                onChangeText={setMonthlyBudgetInput}
+                autoFocus
+              />
+            </View>
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setBudgetModalVisible(false)}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton]}
+                onPress={handleSaveBudget}
+              >
+                <Text style={styles.modalButtonText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -424,5 +501,80 @@ const styles = StyleSheet.create({
   dropdownContainerStyle: {
     borderWidth: 1,
     borderRadius: 8,
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.6)",
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: AppColors.dark.cardBackground,
+    borderRadius: 20,
+    padding: 25,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    width: "85%",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 20,
+    color: AppColors.dark.text,
+  },
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: AppColors.dark.border,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    marginBottom: 20,
+    width: "100%",
+  },
+  currencySymbolModal: {
+    fontSize: 18,
+    color: AppColors.dark.text,
+    marginRight: 8,
+  },
+  modalTextInput: {
+    flex: 1,
+    height: 50,
+    fontSize: 18,
+    color: AppColors.dark.text,
+  },
+  modalButtonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  modalButton: {
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    elevation: 2,
+    minWidth: 100,
+    alignItems: "center",
+  },
+  cancelButton: {
+    backgroundColor: AppColors.dark.secondaryBackground,
+    borderColor: AppColors.dark.border,
+    borderWidth: 1,
+  },
+  saveButton: {
+    backgroundColor: AppColors.dark.primary,
+  },
+  modalButtonText: {
+    color: AppColors.dark.text,
+    fontWeight: "bold",
+    textAlign: "center",
   },
 });

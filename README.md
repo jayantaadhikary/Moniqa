@@ -27,7 +27,7 @@
   - [x] Basic UI for the settings screen
   - [ ] App Settings
     - [x] Manage Currency
-    - [ ] Manage Budget
+    - [x] Manage Budget
     - [ ] Manage Categories (add & delete)
     - [ ] Notification Reminder (gentle reminder & nudges to add expenses and save money)
     - [ ] More App Settings (to be decided)
