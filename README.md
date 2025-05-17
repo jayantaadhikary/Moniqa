@@ -31,7 +31,7 @@
   - [ ] Add a Toast after successful expense addition
   - [ ] Swipe to delete expenses
   - [ ] Add Income feature
-  - [ ] Make the budget card droppable to show income, expenses and savings
+  - [ ] Make the budget card tappable/droppable to show income, expenses and savings
 
 - [ ] To think on what more features to add to the Home Screen and how to make it better and more user friendly
 
@@ -41,7 +41,7 @@
   - [x] View spending by month, week and year.
     - [ ] Add custom date range date picker
   - [ ] Graphs for visualizing spending habits
-  - [ ] View spending by category
+  - [x] View top spendings by category
   - [ ] View Spending compared to budget & income
 
 - [ ] To think on what more features to add to the Summary & Analytics Screen and how to make it better and more user friendly

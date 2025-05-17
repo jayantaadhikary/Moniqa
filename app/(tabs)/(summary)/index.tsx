@@ -1,4 +1,5 @@
 import { AppColors } from "@/constants/Colors";
+import useCategoryStore from "@/stores/useCategoryStore";
 import useExpenseStore, { Expense } from "@/stores/useExpenseStore";
 import useUserPreferencesStore from "@/stores/useUserPreferencesStore";
 import {
@@ -12,6 +13,7 @@ import {
 } from "date-fns";
 import React, { useEffect, useState } from "react";
 import {
+  FlatList,
   Modal,
   Pressable,
   SafeAreaView,
@@ -29,9 +31,18 @@ export type SummaryPeriodOption =
   | "This Year"
   | "Custom";
 
+export interface CategorizedExpenseSummary {
+  id: string; // Will use category name as ID
+  name: string;
+  emoji: string;
+  amount: number;
+  percentage: number;
+}
+
 const SummaryPage = () => {
   const { expenses } = useExpenseStore();
   const { selectedCurrencySymbol } = useUserPreferencesStore();
+  const { masterCategoryIcons, createdCustomCategories } = useCategoryStore();
 
   const [currentFilterPeriod, setCurrentFilterPeriod] =
     useState<SummaryPeriodOption>("This Month");
@@ -40,6 +51,9 @@ const SummaryPage = () => {
   const [calculatedTotalExpenses, setCalculatedTotalExpenses] =
     useState<number>(0);
   const [isPeriodSelectorVisible, setPeriodSelectorVisible] = useState(false);
+  const [categorizedExpensesSummary, setCategorizedExpensesSummary] = useState<
+    CategorizedExpenseSummary[]
+  >([]);
 
   useEffect(() => {
     const now = new Date();
@@ -91,7 +105,52 @@ const SummaryPage = () => {
     }, 0);
 
     setCalculatedTotalExpenses(total);
-  }, [expenses, currentFilterPeriod, customStartDate, customEndDate]);
+
+    if (total > 0) {
+      const categoryMap: { [key: string]: CategorizedExpenseSummary } = {};
+
+      filtered.forEach((expense: Expense) => {
+        const categoryName = expense.category;
+        if (!categoryName) return;
+
+        let categoryEmoji =
+          masterCategoryIcons[categoryName] ||
+          createdCustomCategories[categoryName] ||
+          "❓";
+
+        if (!categoryMap[categoryName]) {
+          categoryMap[categoryName] = {
+            id: categoryName, // Use category name as ID
+            name: categoryName,
+            emoji: categoryEmoji,
+            amount: 0,
+            percentage: 0,
+          };
+        }
+        const expenseAmount = parseFloat(expense.amount);
+        categoryMap[categoryName].amount += isNaN(expenseAmount)
+          ? 0
+          : expenseAmount;
+      });
+
+      const summaryArray = Object.values(categoryMap).map((catSummary) => ({
+        ...catSummary,
+        percentage: total > 0 ? (catSummary.amount / total) * 100 : 0,
+      }));
+
+      summaryArray.sort((a, b) => b.amount - a.amount);
+      setCategorizedExpensesSummary(summaryArray.slice(0, 5)); // Slice to get top 5
+    } else {
+      setCategorizedExpensesSummary([]);
+    }
+  }, [
+    expenses,
+    currentFilterPeriod,
+    customStartDate,
+    customEndDate,
+    masterCategoryIcons,
+    createdCustomCategories,
+  ]);
 
   const displayPeriodText = () => {
     if (currentFilterPeriod === "Custom" && customStartDate && customEndDate) {
@@ -111,6 +170,28 @@ const SummaryPage = () => {
       _setCustomEndDate(null);
     }
   };
+
+  const renderCategoryItem = ({
+    item,
+  }: {
+    item: CategorizedExpenseSummary;
+  }) => (
+    <View style={styles.categoryItemContainer}>
+      <Text style={styles.categoryItemEmoji}>{item.emoji}</Text>
+      <View style={styles.categoryItemDetails}>
+        <Text style={styles.categoryItemName} numberOfLines={1}>
+          {item.name}
+        </Text>
+        <Text style={styles.categoryItemPercentage}>
+          {item.percentage.toFixed(1)}% of total
+        </Text>
+      </View>
+      <Text style={styles.categoryItemAmount}>
+        {selectedCurrencySymbol}
+        {item.amount.toFixed(2)}
+      </Text>
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -136,21 +217,34 @@ const SummaryPage = () => {
         </View>
 
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Spending by Category</Text>
-          <View style={styles.placeholderContent}>
-            <Text style={styles.placeholderText}>
-              Category breakdown will be shown here (e.g., list or pie chart).
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Spending Trends</Text>
           <View style={styles.placeholderContent}>
             <Text style={styles.placeholderText}>
               Charts for spending trends will be displayed here.
             </Text>
           </View>
+        </View>
+
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Top Categories</Text>{" "}
+          {/* Renamed title */}
+          {categorizedExpensesSummary.length > 0 ? (
+            <FlatList
+              data={categorizedExpensesSummary} // Already sliced to top 5
+              renderItem={renderCategoryItem}
+              keyExtractor={(item) => item.id} // item.id is now category name
+              scrollEnabled={false}
+              ItemSeparatorComponent={() => (
+                <View style={styles.categorySeparator} />
+              )}
+            />
+          ) : (
+            <View style={styles.placeholderContent}>
+              <Text style={styles.placeholderText}>
+                No spending data for the selected period.
+              </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -262,7 +356,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "600",
     color: AppColors.dark.text,
     marginBottom: 10,
@@ -281,6 +375,38 @@ const styles = StyleSheet.create({
     color: AppColors.dark.secondaryText,
     textAlign: "center",
     paddingHorizontal: 10,
+  },
+  categoryItemContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+  categoryItemEmoji: {
+    fontSize: 22,
+    marginRight: 12,
+  },
+  categoryItemDetails: {
+    flex: 1,
+    marginRight: 10,
+  },
+  categoryItemName: {
+    fontSize: 14,
+    color: AppColors.dark.text,
+    fontWeight: "500",
+  },
+  categoryItemPercentage: {
+    fontSize: 13,
+    color: AppColors.dark.secondaryText,
+  },
+  categoryItemAmount: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: AppColors.dark.primary,
+  },
+  categorySeparator: {
+    height: 1,
+    backgroundColor: AppColors.dark.border,
+    marginVertical: 4,
   },
   modalOverlay: {
     flex: 1,
