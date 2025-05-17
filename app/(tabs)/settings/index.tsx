@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
@@ -101,7 +102,7 @@ const SettingScreen = () => {
   };
 
   const handleManageCategories = () =>
-    console.log("Navigate to /settings/manage-categories (Placeholder)");
+    router.push("/settings/manageCategories");
   const handleNotificationReminders = () =>
     console.log("Navigate to Notification Reminders (Placeholder)");
 
