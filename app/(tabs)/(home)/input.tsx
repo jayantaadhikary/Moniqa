@@ -17,6 +17,7 @@ import {
 } from "react-native";
 import EmojiSelector from "react-native-emoji-selector";
 import "react-native-get-random-values";
+import Toast from "react-native-toast-message";
 import { v4 as uuidv4 } from "uuid";
 import { AppColors } from "../../../constants/Colors";
 import useCategoryStore from "../../../stores/useCategoryStore";
@@ -40,6 +41,18 @@ const InputPage = () => {
   const addCategoryToStore = useCategoryStore((state) => state.addCategory); // Renamed for clarity if used
   const addExpense = useExpenseStore((state) => state.addExpense);
   const { selectedCurrencySymbol } = useUserPreferencesStore();
+
+  const showToast = () => {
+    Toast.show({
+      type: "success",
+      text1: "Success",
+      text2: "Your expense has been successfully added.",
+      position: "bottom",
+      visibilityTime: 2000,
+      autoHide: true,
+      bottomOffset: 50,
+    });
+  };
 
   const handleAddCategory = () => {
     if (newCategory.trim() && emoji) {
@@ -86,6 +99,8 @@ const InputPage = () => {
       date: date.toISOString(),
       note,
     });
+
+    showToast();
 
     router.replace("/(tabs)/(home)");
   };

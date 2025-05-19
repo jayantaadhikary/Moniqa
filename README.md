@@ -28,10 +28,11 @@
   - [x] View Expenses
   - [x] Filter By Day/Week/Month
   - [x] Click on expense to edit/delete
-  - [ ] Add a Toast after successful expense addition
+  - [x] Add a Toast after successful expense addition
   - [ ] Swipe to delete expenses
   - [ ] Add Income feature
   - [ ] Make the budget card tappable/droppable to show income, expenses and savings
+  - [ ] Add Search feature for expenses
 
 - [ ] To think on what more features to add to the Home Screen and how to make it better and more user friendly
 
@@ -39,8 +40,7 @@
 
   - [x] Basic UI for the summary screen
   - [x] View spending by month, week and year.
-    - [ ] Add custom date range date picker
-  - [x] Graphs for visualizing spending habits
+  - [x] Line Graph for visualizing spending trends
   - [x] View top spendings by category
   - [ ] View Spending compared to budget & income
 
@@ -70,8 +70,9 @@
 1. Cloud Sync
 2. Export Data (CSV, PDF)
 3. Advanced Budgetting Features
-4. Advanced Analytics
-5. Recurring & Scheduled Expenses
-6. Custom Logos & Widgets
-7. AI Integration (Maybe 🤷‍♂️ )
-8. Support an indie developer ❤️
+4. Advanced Analytics - Select Custom Date Ranges
+5. Attach Receipts to expenses
+6. Recurring & Scheduled Expenses
+7. Custom Logos & Widgets
+8. AI Integration (Maybe 🤷‍♂️ )
+9. Support an indie developer ❤️

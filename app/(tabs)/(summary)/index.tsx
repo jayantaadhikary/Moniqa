@@ -483,8 +483,10 @@ const SummaryPage = () => {
               yAxisOffset={0}
               rulesLength={dynamicRulesLength}
               rulesColor={AppColors.dark.border}
-              yAxisLabelWidth={35}
-              // paddingRight={15}
+              yAxisLabelWidth={45}
+              formatYLabel={(value) => {
+                return `${selectedCurrencySymbol}${value}`;
+              }}
             />
           ) : (
             <View style={styles.placeholderContent}>
