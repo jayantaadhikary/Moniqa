@@ -1,13 +1,14 @@
 import { DateTimePicker as DateTimePickerAndroid } from "@expo/ui/jetpack-compose";
 import { DateTimePicker } from "@expo/ui/swift-ui";
-import { isFuture } from "date-fns"; // Added isFuture from date-fns
-import { router } from "expo-router";
-import React, { useState } from "react";
+import { isFuture } from "date-fns";
+import { useRouter } from "expo-router"; // Added this line
+import React, { useCallback, useState } from "react";
 import {
-  Alert, // Added Alert
+  Alert,
   Keyboard,
   Modal,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -16,261 +17,421 @@ import {
   View,
 } from "react-native";
 import EmojiSelector from "react-native-emoji-selector";
-import "react-native-get-random-values";
+import "react-native-get-random-values"; // Polyfill must be the very first import
 import Toast from "react-native-toast-message";
 import { v4 as uuidv4 } from "uuid";
 import { AppColors } from "../../../constants/Colors";
 import useCategoryStore from "../../../stores/useCategoryStore";
 import useExpenseStore from "../../../stores/useExpenseStore";
+import useIncomeCategoryStore from "../../../stores/useIncomeCategoryStore";
+import useIncomeStore from "../../../stores/useIncomeStore";
 import useUserPreferencesStore from "../../../stores/useUserPreferencesStore";
 
+type FormMode = "expense" | "income";
+
 const InputPage = () => {
-  const [amount, setAmount] = useState("");
+  const router = useRouter(); // Added this line
+  const [formMode, setFormMode] = useState<FormMode>("expense");
+
+  const [expenseAmount, setExpenseAmount] = useState("");
   const [category, setCategory] = useState("");
-  const [emoji, setEmoji] = useState<string | null>(null);
-  const [date, setDate] = useState(new Date());
-  const [note, setNote] = useState("");
+  const [expenseEmoji, setExpenseEmoji] = useState<string | null>(null);
+  const [expenseDate, setExpenseDate] = useState(new Date());
+  const [expenseNote, setExpenseNote] = useState("");
   const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
   const [newCategory, setNewCategory] = useState("");
 
-  // Using Zustand store
-  // Get userCategoryIcons which holds the user's selected default categories
+  const [incomeAmount, setIncomeAmount] = useState<string>("");
+  const [source, setSource] = useState<string>("");
+  const [incomeDate, setIncomeDate] = useState<Date>(new Date());
+  const [incomeNote, setIncomeNote] = useState<string>("");
+
   const userCategoryIcons = useCategoryStore(
     (state) => state.userCategoryIcons
   );
-  const addCategoryToStore = useCategoryStore((state) => state.addCategory); // Renamed for clarity if used
+  const addCategoryToStore = useCategoryStore((state) => state.addCategory);
   const addExpense = useExpenseStore((state) => state.addExpense);
   const { selectedCurrencySymbol } = useUserPreferencesStore();
 
-  const showToast = () => {
+  const { userIncomeCategoryIcons } = useIncomeCategoryStore();
+  const addIncome = useIncomeStore((state) => state.addIncome);
+
+  const showSuccessToast = useCallback((message: string) => {
     Toast.show({
       type: "success",
       text1: "Success",
-      text2: "Your expense has been successfully added.",
+      text2: message,
       position: "bottom",
       visibilityTime: 2000,
       autoHide: true,
       bottomOffset: 50,
     });
-  };
+  }, []);
 
   const handleAddCategory = () => {
-    if (newCategory.trim() && emoji) {
-      console.log("Adding category:", newCategory, "with emoji:", emoji);
-      // This adds the new category to the user's list in the store
-      addCategoryToStore(newCategory, emoji);
-      setCategory(newCategory); // Set the current expense category to the new one
+    if (newCategory.trim() && expenseEmoji) {
+      addCategoryToStore(newCategory, expenseEmoji);
+      setCategory(newCategory);
       setNewCategory("");
-      setEmoji(null);
+      setExpenseEmoji(null);
       setShowAddCategoryModal(false);
     } else {
-      console.log("Category name or emoji is missing.");
+      Alert.alert(
+        "Missing Information",
+        "Category name and emoji are required."
+      );
     }
   };
 
   const handleExpenseSubmit = () => {
-    if (!amount || !category) {
-      Alert.alert("Missing Information", "Amount and category are required."); // Updated Alert message
+    if (!expenseAmount || !category) {
+      Alert.alert("Missing Information", "Amount and category are required.");
       return;
     }
-
-    // validate amount
-    const parsedAmount = parseFloat(amount);
+    const parsedAmount = parseFloat(expenseAmount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      Alert.alert("Invalid Amount", "Please enter a valid positive amount."); // Updated Alert message
+      Alert.alert("Invalid Amount", "Please enter a valid positive amount.");
       return;
     }
-
-    // Validate date - prevent future dates
-    if (isFuture(date)) {
+    if (isFuture(expenseDate)) {
       Alert.alert(
         "Invalid Date",
         "Future dates are not allowed for expenses. Please select a current or past date."
       );
       return;
     }
-
     addExpense({
       id: uuidv4(),
-      amount,
+      amount: expenseAmount,
       category,
-      // Use the emoji from userCategoryIcons, fallback if somehow not there
       emoji: userCategoryIcons[category] || "❓",
-      date: date.toISOString(),
-      note,
+      date: expenseDate.toISOString(),
+      note: expenseNote,
     });
-
-    showToast();
-
-    router.replace("/(tabs)/(home)");
+    showSuccessToast("Your expense has been successfully added.");
+    setExpenseAmount("");
+    setCategory("");
+    setExpenseNote("");
+    setExpenseDate(new Date());
+    router.replace("/(tabs)/(home)"); // Added this line
   };
 
-  // Display categories from the user's selected defaults
-  const categoryList = Object.keys(userCategoryIcons);
+  const handleIncomeSubmit = useCallback(() => {
+    if (!incomeAmount || !source) {
+      Alert.alert("Missing Information", "Amount and source are required.");
+      return;
+    }
+    const parsedAmount = parseFloat(incomeAmount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      Alert.alert("Invalid Amount", "Please enter a valid positive amount.");
+      return;
+    }
+    if (isFuture(incomeDate)) {
+      Alert.alert(
+        "Invalid Date",
+        "Future dates are not allowed for income. Please select a current or past date."
+      );
+      return;
+    }
+    addIncome({
+      id: uuidv4(),
+      amount: incomeAmount,
+      source,
+      emoji: userIncomeCategoryIcons[source] || "❓",
+      date: incomeDate.toISOString(),
+      note: incomeNote,
+    });
+    showSuccessToast("Your income has been successfully added.");
+    setIncomeAmount("");
+    setSource("");
+    setIncomeNote("");
+    setIncomeDate(new Date());
+    router.replace("/(tabs)/(home)"); // Added this line
+  }, [
+    incomeAmount,
+    source,
+    incomeDate,
+    incomeNote,
+    addIncome,
+    userIncomeCategoryIcons,
+    showSuccessToast,
+    router, // Added router to dependency array
+  ]);
+
+  const expenseCategoryList = Object.keys(userCategoryIcons);
+  const incomeSourceList = Object.keys(userIncomeCategoryIcons);
+
+  const onDateSelected = (selectedDate: Date | undefined) => {
+    const currentDate =
+      selectedDate || (formMode === "expense" ? expenseDate : incomeDate);
+    if (formMode === "expense") {
+      setExpenseDate(currentDate);
+    } else {
+      setIncomeDate(currentDate);
+    }
+  };
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <View style={styles.container}>
-        <Text style={styles.header}>Add Expenses</Text>
-
-        {/* Amount and Date Picker */}
-        <View style={styles.horizontalContainer}>
-          <View style={styles.labelContainer}>
-            <Text style={styles.label}>💵 Amount</Text>
-            <Text style={styles.label}>📅 Date</Text>
-          </View>
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder={`${selectedCurrencySymbol}0.00`}
-              placeholderTextColor={AppColors.dark.secondaryText}
-              keyboardType="numeric"
-              value={amount}
-              onChangeText={setAmount}
-              autoFocus
-            />
-            {Platform.OS === "ios" ? (
-              <DateTimePicker
-                initialDate={date.toISOString()}
-                onDateSelected={(date) => {
-                  setDate(date);
-                }}
-                title=""
-                variant="compact"
-                color={AppColors.dark.tint}
-                displayedComponents="date"
-              />
-            ) : (
-              <DateTimePickerAndroid
-                onDateSelected={(date) => {
-                  setDate(date);
-                }}
-                displayedComponents="date"
-                initialDate={date.toISOString()}
-                variant="input"
-                color={AppColors.dark.tint}
-              />
-            )}
-
-            {/* <DateTimePicker
-              value={date}
-              mode="date"
-              display="inline"
-              onChange={(event, selectedDate) => setDate(selectedDate || date)}
-              themeVariant="dark"
-            /> */}
-          </View>
-        </View>
-
-        {/* Category Selection */}
-        <Text style={styles.label}>🗂️ Category</Text>
-        <View style={styles.categoryContainer}>
-          {categoryList.map((item) => (
-            <TouchableOpacity
-              key={item}
-              style={[
-                styles.categoryButton,
-                category === item && styles.selectedCategory,
-              ]}
-              onPress={() => setCategory(item)}
-            >
-              <Text style={styles.categoryText}>
-                {userCategoryIcons[item]} {item}{" "}
-                {/* Display emoji from userCategoryIcons */}
-              </Text>
-            </TouchableOpacity>
-          ))}
+      <View style={styles.pageContainer}>
+        <View style={styles.formToggleHeader}>
           <TouchableOpacity
-            style={styles.addCategoryButton}
-            onPress={() => setShowAddCategoryModal(true)}
+            onPress={() => setFormMode("expense")}
+            style={styles.toggleButtonContainer}
           >
-            <Text style={styles.addCategoryText}>➕ Add</Text>
+            <Text
+              style={[
+                styles.toggleButtonText,
+                formMode === "expense" && styles.activeToggleButtonText,
+              ]}
+            >
+              Add Expense
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setFormMode("income")}
+            style={styles.toggleButtonContainer}
+          >
+            <Text
+              style={[
+                styles.toggleButtonText,
+                formMode === "income" && styles.activeToggleButtonText,
+              ]}
+            >
+              Add Income
+            </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Add Category Modal */}
-        <Modal
-          visible={showAddCategoryModal}
-          transparent={true}
-          animationType="slide"
-          onRequestClose={() => setShowAddCategoryModal(false)}
+        <ScrollView
+          style={styles.scrollableFormArea}
+          contentContainerStyle={styles.scrollContentContainer}
+          keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Add New Category</Text>
-
-              {emoji === null ? (
-                <View style={{ width: "100%", height: 250 }}>
-                  <EmojiSelector
-                    onEmojiSelected={(selectedEmoji: string) => {
-                      console.log("Emoji selected:", selectedEmoji);
-                      setEmoji(selectedEmoji);
-                    }}
-                    showSearchBar={false}
-                    showTabs={false}
-                    showSectionTitles={false}
-                    columns={6}
+          {formMode === "expense" ? (
+            <>
+              <View style={styles.verticalContainer}>
+                <View style={styles.labelContainer}>
+                  <Text style={styles.label}>💵 Amount</Text>
+                  <TextInput
+                    style={styles.inputAmount}
+                    placeholder={`${selectedCurrencySymbol}0.00`}
+                    placeholderTextColor={AppColors.dark.secondaryText}
+                    keyboardType="numeric"
+                    value={expenseAmount}
+                    onChangeText={setExpenseAmount}
+                    autoFocus
                   />
                 </View>
-              ) : (
-                <TouchableOpacity
-                  style={styles.input}
-                  onPress={() => {
-                    console.log("Opening emoji picker");
-                    setEmoji(null); // Reset emoji selection
-                  }}
-                >
-                  <Text style={{ color: AppColors.dark.text }}>
-                    {emoji || "Select Emoji"}
-                  </Text>
-                </TouchableOpacity>
-              )}
+                <View style={styles.labelContainer}>
+                  {/* <Text style={styles.label}>📅 Date</Text> */}
+                  {Platform.OS === "ios" ? (
+                    <DateTimePicker
+                      initialDate={expenseDate.toISOString()}
+                      onDateSelected={onDateSelected}
+                      title="📅 Date"
+                      variant="compact"
+                      color={AppColors.dark.tint}
+                      displayedComponents="date"
+                      style={styles.datePicker}
+                    />
+                  ) : (
+                    <DateTimePickerAndroid
+                      onDateSelected={onDateSelected}
+                      displayedComponents="date"
+                      initialDate={expenseDate.toISOString()}
+                      variant="input"
+                      color={AppColors.dark.tint}
+                      style={styles.datePicker}
+                    />
+                  )}
+                </View>
+              </View>
 
-              <TextInput
-                style={styles.input}
-                placeholder="Enter category name (e.g., Art)"
-                placeholderTextColor={AppColors.dark.secondaryText}
-                value={newCategory}
-                onChangeText={setNewCategory}
-              />
-              <View style={styles.modalActions}>
+              <Text style={styles.label}>🗂️ Category</Text>
+              <View style={styles.categoryContainer}>
+                {expenseCategoryList.map((item) => (
+                  <TouchableOpacity
+                    key={item}
+                    style={[
+                      styles.categoryButton,
+                      category === item && styles.selectedCategory,
+                    ]}
+                    onPress={() => setCategory(item)}
+                  >
+                    <Text style={styles.categoryText}>
+                      {userCategoryIcons[item]} {item}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
                 <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={() => setShowAddCategoryModal(false)}
+                  style={styles.addCategoryButton}
+                  onPress={() => setShowAddCategoryModal(true)}
                 >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.addButton}
-                  onPress={handleAddCategory}
-                >
-                  <Text style={styles.addButtonText}>Add</Text>
+                  <Text style={styles.addCategoryText}>➕ Add</Text>
                 </TouchableOpacity>
               </View>
-            </View>
-          </View>
-        </Modal>
 
-        {/* Note Input */}
-        <Text style={styles.label}>📝 Note (optional)</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Add a note"
-          placeholderTextColor={AppColors.dark.secondaryText}
-          maxLength={40}
-          value={note}
-          onChangeText={setNote}
-        />
+              <Text style={styles.label}>📝 Note (optional)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Add a note for your expense"
+                placeholderTextColor={AppColors.dark.secondaryText}
+                maxLength={40}
+                value={expenseNote}
+                onChangeText={setExpenseNote}
+              />
 
-        {/* Submit Expense Button */}
-        <TouchableOpacity
-          style={styles.submitButton}
-          onPress={() => {
-            handleExpenseSubmit();
-          }}
-        >
-          <Text style={styles.submitButtonText}>Submit Expense</Text>
-        </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.submitButton}
+                onPress={handleExpenseSubmit}
+              >
+                <Text style={styles.submitButtonText}>Add Expense</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <View style={styles.verticalContainer}>
+                <View style={styles.labelContainer}>
+                  <Text style={styles.label}>💵 Amount</Text>
+                  <TextInput
+                    style={styles.inputAmount}
+                    placeholder={`${selectedCurrencySymbol}0.00`}
+                    placeholderTextColor={AppColors.dark.secondaryText}
+                    keyboardType="numeric"
+                    value={incomeAmount}
+                    onChangeText={setIncomeAmount}
+                    autoFocus
+                  />
+                </View>
+                <View style={styles.labelContainer}>
+                  {/* <Text style={styles.label}>📅 Date</Text> */}
+                  {Platform.OS === "ios" ? (
+                    <DateTimePicker
+                      initialDate={incomeDate.toISOString()}
+                      onDateSelected={onDateSelected}
+                      title="📅 Date"
+                      variant="compact"
+                      color={AppColors.dark.tint}
+                      displayedComponents="date"
+                      style={styles.datePicker}
+                    />
+                  ) : (
+                    <DateTimePickerAndroid
+                      onDateSelected={onDateSelected}
+                      displayedComponents="date"
+                      initialDate={incomeDate.toISOString()}
+                      variant="input"
+                      color={AppColors.dark.tint}
+                      style={styles.datePicker}
+                    />
+                  )}
+                </View>
+              </View>
+
+              <Text style={styles.label}>🗂️ Source</Text>
+              <View style={styles.categoryContainer}>
+                {incomeSourceList.map((item) => (
+                  <TouchableOpacity
+                    key={item}
+                    style={[
+                      styles.categoryButton,
+                      source === item && styles.selectedCategory,
+                    ]}
+                    onPress={() => setSource(item)}
+                  >
+                    <Text style={styles.categoryText}>
+                      {userIncomeCategoryIcons[item]} {item}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.label}>📝 Note (optional)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Add a note for your income"
+                placeholderTextColor={AppColors.dark.secondaryText}
+                maxLength={40}
+                value={incomeNote}
+                onChangeText={setIncomeNote}
+              />
+
+              <TouchableOpacity
+                style={styles.submitButton}
+                onPress={handleIncomeSubmit}
+              >
+                <Text style={styles.submitButtonText}>Add Income</Text>
+              </TouchableOpacity>
+            </>
+          )}
+
+          {formMode === "expense" && (
+            <Modal
+              visible={showAddCategoryModal}
+              transparent={true}
+              animationType="slide"
+              onRequestClose={() => setShowAddCategoryModal(false)}
+            >
+              <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                  <Text style={styles.modalTitle}>Add New Category</Text>
+                  {expenseEmoji === null ? (
+                    <View style={{ width: "100%", height: 250 }}>
+                      <EmojiSelector
+                        onEmojiSelected={(selectedEmoji: string) => {
+                          setExpenseEmoji(selectedEmoji);
+                        }}
+                        showSearchBar={false}
+                        showTabs={false}
+                        showSectionTitles={false}
+                        columns={6}
+                      />
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.input}
+                      onPress={() => {
+                        setExpenseEmoji(null);
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: AppColors.dark.text,
+                          fontSize: 24,
+                          textAlign: "center",
+                        }}
+                      >
+                        {expenseEmoji}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter category name (e.g., Art)"
+                    placeholderTextColor={AppColors.dark.secondaryText}
+                    value={newCategory}
+                    onChangeText={setNewCategory}
+                  />
+                  <View style={styles.modalActions}>
+                    <TouchableOpacity
+                      style={styles.cancelButton}
+                      onPress={() => setShowAddCategoryModal(false)}
+                    >
+                      <Text style={styles.cancelButtonText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.addButton}
+                      onPress={handleAddCategory}
+                    >
+                      <Text style={styles.addButtonText}>Add</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </Modal>
+          )}
+        </ScrollView>
       </View>
     </TouchableWithoutFeedback>
   );
@@ -279,35 +440,52 @@ const InputPage = () => {
 export default InputPage;
 
 const styles = StyleSheet.create({
-  container: {
+  pageContainer: {
     flex: 1,
     backgroundColor: AppColors.dark.background,
+  },
+  formToggleHeader: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === "android" ? 16 : 10,
+    paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: AppColors.dark.secondaryBackground,
+  },
+  toggleButtonContainer: {
+    paddingVertical: 8,
+  },
+  toggleButtonText: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: AppColors.dark.secondaryText,
+  },
+  activeToggleButtonText: {
+    color: AppColors.dark.tint,
+    borderBottomWidth: 2,
+    borderBottomColor: AppColors.dark.tint,
+    paddingBottom: 2,
+  },
+  scrollableFormArea: {
+    flex: 1,
+  },
+  scrollContentContainer: {
     padding: 16,
   },
-  header: {
-    color: AppColors.dark.text,
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 24,
-    textAlign: "center",
-  },
-  horizontalContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+  verticalContainer: {
+    // flexDirection: "row",
     marginBottom: 16,
+    gap: 16,
   },
   labelContainer: {
     flex: 1,
-  },
-  inputContainer: {
-    // flex: 2,
   },
   label: {
     color: AppColors.dark.text,
     fontSize: 16,
     marginBottom: 8,
-    marginTop: 16,
   },
   input: {
     backgroundColor: AppColors.dark.secondaryBackground,
@@ -315,6 +493,28 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     padding: 12,
     marginBottom: 16,
+    fontSize: 16,
+  },
+  inputAmount: {
+    backgroundColor: AppColors.dark.secondaryBackground,
+    color: AppColors.dark.text,
+    borderRadius: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 12, // Added horizontal padding
+    fontSize: 16,
+  },
+  datePicker: {
+    // Added style definition for date pickers
+    // backgroundColor: AppColors.dark.secondaryBackground,
+    borderRadius: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    fontSize: 16,
+    color: AppColors.dark.text, // Attempt to style text color
+    justifyContent: "center", // Center native UI if smaller than the box
+    alignItems: "flex-start", // Align text to the left
+    // Note: Native date pickers might not respect all style properties (e.g., internal text color/size)
+    // The height will be primarily determined by paddingVertical and fontSize, similar to inputAmount.
   },
   categoryContainer: {
     flexDirection: "row",
@@ -323,8 +523,9 @@ const styles = StyleSheet.create({
   },
   categoryButton: {
     backgroundColor: AppColors.dark.secondaryBackground,
-    padding: 8,
-    borderRadius: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
     marginRight: 8,
     marginBottom: 8,
   },
@@ -333,11 +534,13 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     color: AppColors.dark.text,
+    fontSize: 14,
   },
   addCategoryButton: {
     backgroundColor: AppColors.dark.secondaryBackground,
-    padding: 8,
-    borderRadius: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
     marginRight: 8,
     marginBottom: 8,
     justifyContent: "center",
@@ -345,7 +548,7 @@ const styles = StyleSheet.create({
   },
   addCategoryText: {
     color: AppColors.dark.text,
-    fontWeight: "bold",
+    fontSize: 14,
   },
   modalOverlay: {
     flex: 1,
@@ -354,57 +557,62 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalContent: {
-    backgroundColor: AppColors.dark.background,
-    padding: 16,
-    borderRadius: 8,
-    width: "80%",
+    backgroundColor: AppColors.dark.secondaryBackground,
+    padding: 20,
+    borderRadius: 10,
+    width: "85%",
+    alignItems: "center",
   },
   modalTitle: {
     color: AppColors.dark.text,
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
-    marginBottom: 16,
+    marginBottom: 20,
     textAlign: "center",
   },
   modalActions: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 16,
+    marginTop: 20,
+    width: "100%",
   },
   cancelButton: {
-    backgroundColor: AppColors.dark.secondaryBackground,
-    padding: 12,
-    borderRadius: 4,
+    backgroundColor: AppColors.dark.background,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderRadius: 8,
     flex: 1,
     marginRight: 8,
     alignItems: "center",
   },
   cancelButtonText: {
     color: AppColors.dark.text,
-    textAlign: "center",
+    fontSize: 16,
   },
   addButton: {
     backgroundColor: AppColors.dark.tint,
-    padding: 12,
-    borderRadius: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderRadius: 8,
     flex: 1,
     marginLeft: 8,
     alignItems: "center",
   },
   addButtonText: {
     color: AppColors.dark.text,
-    textAlign: "center",
     fontWeight: "bold",
+    fontSize: 16,
   },
   submitButton: {
     backgroundColor: AppColors.dark.tint,
-    padding: 12,
-    borderRadius: 4,
+    padding: 16,
+    borderRadius: 8,
     alignItems: "center",
-    marginTop: 16,
+    marginTop: 24,
   },
   submitButtonText: {
     color: AppColors.dark.text,
     fontWeight: "bold",
+    fontSize: 16,
   },
 });
