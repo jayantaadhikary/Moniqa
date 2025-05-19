@@ -31,6 +31,10 @@
   - [x] Add a Toast after successful expense addition
   - [ ] Swipe to delete expenses
   - [ ] Add Income feature
+    - [x] Add Income
+    - [x] View total income of month in the budget card
+    - [ ] View income list
+    - [ ] Edit/Delete Income
   - [ ] Make the budget card tappable/droppable to show income, expenses and savings
   - [ ] Add Search feature for expenses
 
@@ -43,8 +47,6 @@
   - [x] Line Graph for visualizing spending trends
   - [x] View top spendings by category
   - [ ] View Spending compared to budget & income
-
-- [ ] To think on what more features to add to the Summary & Analytics Screen and how to make it better and more user friendly
 
 - [ ] Settings Screen
 

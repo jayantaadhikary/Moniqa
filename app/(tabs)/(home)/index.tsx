@@ -16,13 +16,16 @@ import {
 } from "react-native";
 import { ProgressBar } from "react-native-paper";
 import { AppColors } from "../../../constants/Colors";
-import useExpenseStore, { Period } from "../../../stores/useExpenseStore";
+import useExpenseStore, {
+  Expense,
+  Period,
+} from "../../../stores/useExpenseStore";
+import useIncomeStore from "../../../stores/useIncomeStore";
 import useUserPreferencesStore from "../../../stores/useUserPreferencesStore";
 
-const HomePage = () => {
+const HomePage: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
 
-  // Use Zustand store instead of local state and functions
   const selectedPeriod = useExpenseStore((state) => state.selectedPeriod);
   const setSelectedPeriod = useExpenseStore((state) => state.setSelectedPeriod);
   const budgetData = useExpenseStore((state) => state.budgetData);
@@ -32,11 +35,42 @@ const HomePage = () => {
   );
   const { selectedCurrencySymbol } = useUserPreferencesStore();
 
+  const calculateCurrentMonthIncome = useIncomeStore(
+    (state) => state.calculateCurrentMonthIncome
+  );
+  const currentMonthIncome = calculateCurrentMonthIncome();
+
   const spent = calculateSpent(selectedPeriod);
-  const { total } = budgetData[selectedPeriod];
-  const progress = total > 0 ? spent / total : 0;
+  const { total: budgetTotal } = budgetData[selectedPeriod];
+  const progress = budgetTotal > 0 ? spent / budgetTotal : 0;
 
   const filteredExpenses = getFilteredExpenses();
+
+  const renderExpenseItem = ({ item }: { item: Expense }) => {
+    const amountAsNumber = parseFloat(item.amount);
+    const formattedAmount = !isNaN(amountAsNumber)
+      ? amountAsNumber.toFixed(2)
+      : "0.00";
+    return (
+      <TouchableOpacity
+        style={styles.expenseRow}
+        onPress={() => router.push(`/expense/${item.id}`)}
+      >
+        <Text style={styles.expenseIcon}>{item.emoji}</Text>
+        <View style={styles.expenseDetailsContainer}>
+          <Text style={styles.expenseTitle}>{item.category}</Text>
+          <Text style={styles.expenseDate}>
+            {format(new Date(item.date), "dd MMM")}
+          </Text>
+          {item.note && <Text style={styles.expenseNote}>{item.note}</Text>}
+        </View>
+        <Text style={styles.expenseAmount}>
+          {selectedCurrencySymbol}
+          {formattedAmount}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -66,17 +100,17 @@ const HomePage = () => {
           <View style={styles.bottomSheetContainer}>
             <View style={styles.bottomSheetContent}>
               <Text style={styles.modalTitle}>Choose budget period:</Text>
-              {Object.keys(budgetData).map((period) => (
+              {Object.values(Period).map((periodValue) => (
                 <Pressable
-                  key={period}
+                  key={periodValue}
                   style={styles.modalOption}
                   onPress={() => {
-                    setSelectedPeriod(period as Period);
+                    setSelectedPeriod(periodValue as Period);
                     setIsModalVisible(false);
                   }}
                 >
                   <View style={styles.modalOptionRow}>
-                    {selectedPeriod === period && (
+                    {selectedPeriod === periodValue && (
                       <MaterialIcons
                         name="check-circle"
                         size={20}
@@ -84,7 +118,10 @@ const HomePage = () => {
                         style={styles.modalOptionCheck}
                       />
                     )}
-                    <Text style={styles.modalOptionText}>{period}</Text>
+                    <Text style={styles.modalOptionText}>
+                      {periodValue.charAt(0).toUpperCase() +
+                        periodValue.slice(1)}
+                    </Text>
                   </View>
                 </Pressable>
               ))}
@@ -96,30 +133,42 @@ const HomePage = () => {
       {/* Tappable Card */}
       <View style={styles.budgetCard}>
         <View style={styles.budgetHeader}>
-          <Text style={styles.budgetTitle}>📅 {selectedPeriod} Budget</Text>
+          <Text style={styles.budgetTitle}>
+            📅{" "}
+            {selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)}{" "}
+            Budget
+          </Text>
         </View>
         <Text style={styles.budgetDetails}>
           💸 {selectedCurrencySymbol}
           {spent.toFixed(2)} spent of {selectedCurrencySymbol}
-          {total.toFixed(2)}
+          {budgetTotal.toFixed(2)}
+        </Text>
+        <Text style={styles.incomeDetails}>
+          💰 Income (This Month): {selectedCurrencySymbol}
+          {currentMonthIncome.toFixed(2)}
         </Text>
         <Text
           style={[
             styles.budgetStatus,
-            spent >= total ? styles.exceededText : styles.remainingText,
+            spent >= budgetTotal ? styles.exceededText : styles.remainingText,
           ]}
         >
-          {spent === total
+          {spent === budgetTotal
             ? `⚠️ Budget Limit reached!`
-            : spent > total
+            : spent > budgetTotal
             ? `⚠️ Exceeded by ${selectedCurrencySymbol}${(
-                spent - total
+                spent - budgetTotal
               ).toFixed(2)}`
-            : `✅ ${selectedCurrencySymbol}${(total - spent).toFixed(2)} left`}
+            : `✅ ${selectedCurrencySymbol}${(budgetTotal - spent).toFixed(
+                2
+              )} left`}
         </Text>
         <ProgressBar
-          progress={progress}
-          color={AppColors.dark.tint}
+          progress={progress > 1 ? 1 : progress}
+          color={
+            spent > budgetTotal ? AppColors.dark.error : AppColors.dark.tint
+          }
           style={styles.progressBar}
         />
       </View>
@@ -133,33 +182,7 @@ const HomePage = () => {
           <FlatList
             data={filteredExpenses}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => {
-              const amountAsNumber = parseFloat(item.amount);
-              const formattedAmount = !isNaN(amountAsNumber)
-                ? amountAsNumber.toFixed(2)
-                : "0.00"; // Fallback to 0.00 if parsing fails
-              return (
-                <TouchableOpacity
-                  style={styles.expenseRow}
-                  onPress={() => router.push(`/expense/${item.id}`)}
-                >
-                  <Text style={styles.expenseIcon}>{item.emoji}</Text>
-                  <View style={styles.expenseDetailsContainer}>
-                    <Text style={styles.expenseTitle}>{item.category}</Text>
-                    <Text style={styles.expenseDate}>
-                      {format(new Date(item.date), "dd MMM")}
-                    </Text>
-                    {item.note && (
-                      <Text style={styles.expenseNote}>{item.note}</Text>
-                    )}
-                  </View>
-                  <Text style={styles.expenseAmount}>
-                    {selectedCurrencySymbol}
-                    {formattedAmount}
-                  </Text>
-                </TouchableOpacity>
-              );
-            }}
+            renderItem={renderExpenseItem}
             ItemSeparatorComponent={() => <View style={styles.divider} />}
           />
         ) : (
@@ -238,6 +261,11 @@ const styles = StyleSheet.create({
     color: AppColors.dark.text,
     fontSize: 14,
     marginVertical: 8,
+  },
+  incomeDetails: {
+    color: AppColors.dark.text,
+    fontSize: 14,
+    marginBottom: 8,
   },
   budgetStatus: {
     fontSize: 14,

@@ -1,3 +1,4 @@
+import { endOfMonth, isWithinInterval, parseISO, startOfMonth } from "date-fns";
 import { MMKV } from "react-native-mmkv";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
@@ -19,11 +20,12 @@ interface IncomeState {
   addIncome: (income: Income) => void;
   editIncome: (updatedIncome: Income) => void;
   deleteIncome: (incomeId: string) => void;
+  calculateCurrentMonthIncome: () => number;
 }
 
 const useIncomeStore = create<IncomeState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       incomes: [],
       addIncome: (income) =>
         set((state) => ({ incomes: [...state.incomes, income] })),
@@ -37,6 +39,20 @@ const useIncomeStore = create<IncomeState>()(
         set((state) => ({
           incomes: state.incomes.filter((income) => income.id !== incomeId),
         })),
+      calculateCurrentMonthIncome: () => {
+        const { incomes } = get();
+        const now = new Date();
+        const interval = { start: startOfMonth(now), end: endOfMonth(now) };
+
+        return incomes.reduce((total, income) => {
+          const incomeDate = parseISO(income.date);
+          if (isWithinInterval(incomeDate, interval)) {
+            const amount = parseFloat(income.amount);
+            return total + (isNaN(amount) ? 0 : amount);
+          }
+          return total;
+        }, 0);
+      },
     }),
     {
       name: "income-store",

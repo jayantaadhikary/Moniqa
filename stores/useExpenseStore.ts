@@ -6,8 +6,12 @@ import { create } from "zustand";
 import mockExpenses from "../sampleData/mockExpenses";
 import { getItem, setItem } from "../utils/mmkv";
 
-// Define the Period type
-export type Period = "Day" | "Week" | "Month";
+// Define Period as a string enum for easier iteration
+export enum Period {
+  Day = "Day",
+  Week = "Week",
+  Month = "Month",
+}
 
 // Define the expense type based on mockExpenses
 export interface Expense {
@@ -47,7 +51,7 @@ const loadInitialState = () => {
 
   return {
     expenses: expenses ? JSON.parse(expenses) : mockExpenses,
-    selectedPeriod: (selectedPeriod as Period) || "Week",
+    selectedPeriod: (selectedPeriod as Period) || Period.Month,
     budgetData: budgetData
       ? JSON.parse(budgetData)
       : {
@@ -137,15 +141,15 @@ const useExpenseStore = create<ExpenseState>((set, get) => ({
     return expenses
       .filter((expense) => {
         const expenseDate = new Date(expense.date);
-        if (selectedPeriod === "Day") {
+        if (selectedPeriod === Period.Day) {
           return expenseDate.toDateString() === now.toDateString();
-        } else if (selectedPeriod === "Week") {
+        } else if (selectedPeriod === Period.Week) {
           const startOfTheWeek = dateFnsStartOfWeek(now, { weekStartsOn: 0 }); // Sunday, 00:00:00
           const endOfTheCurrentDay = dateFnsEndOfDay(now); // Current day, 23:59:59
           return (
             expenseDate >= startOfTheWeek && expenseDate <= endOfTheCurrentDay
           );
-        } else if (selectedPeriod === "Month") {
+        } else if (selectedPeriod === Period.Month) {
           return (
             expenseDate.getMonth() === now.getMonth() &&
             expenseDate.getFullYear() === now.getFullYear()
@@ -162,15 +166,15 @@ const useExpenseStore = create<ExpenseState>((set, get) => ({
 
     const filteredExpenses = expenses.filter((expense) => {
       const expenseDate = new Date(expense.date);
-      if (period === "Day") {
+      if (period === Period.Day) {
         return expenseDate.toDateString() === now.toDateString();
-      } else if (period === "Week") {
+      } else if (period === Period.Week) {
         const startOfTheWeek = dateFnsStartOfWeek(now, { weekStartsOn: 0 }); // Sunday, 00:00:00
         const endOfTheCurrentDay = dateFnsEndOfDay(now); // Current day, 23:59:59
         return (
           expenseDate >= startOfTheWeek && expenseDate <= endOfTheCurrentDay
         );
-      } else if (period === "Month") {
+      } else if (period === Period.Month) {
         return (
           expenseDate.getMonth() === now.getMonth() &&
           expenseDate.getFullYear() === now.getFullYear()
