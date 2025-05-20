@@ -33,8 +33,8 @@
   - [x] Add Income feature
     - [x] Add Income
     - [x] View total income of month in the budget card
-    - [ ] View income list
-    - [ ] Edit/Delete Income
+    - [x] View income list
+    - [x] Edit/Delete Income
   - [ ] Add Search feature for expenses
 
 - [ ] To think on what more features to add to the Home Screen and how to make it better and more user friendly

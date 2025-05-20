@@ -1,6 +1,6 @@
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { FontAwesome, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { format } from "date-fns";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   FlatList,
@@ -24,6 +24,7 @@ import useIncomeStore from "../../../stores/useIncomeStore";
 import useUserPreferencesStore from "../../../stores/useUserPreferencesStore";
 
 const HomePage: React.FC = () => {
+  const router = useRouter();
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const selectedPeriod = useExpenseStore((state) => state.selectedPeriod);
@@ -144,10 +145,22 @@ const HomePage: React.FC = () => {
           {spent.toFixed(2)} spent of {selectedCurrencySymbol}
           {budgetTotal.toFixed(2)}
         </Text>
-        <Text style={styles.incomeDetails}>
-          💰 Income (This Month): {selectedCurrencySymbol}
-          {currentMonthIncome.toFixed(2)}
-        </Text>
+        <View style={styles.incomeValueContainer}>
+          <Text style={styles.incomeDetails}>
+            💰 Income (This Month): {selectedCurrencySymbol}
+            {currentMonthIncome.toFixed(2)}
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/(home)/incomeList")}
+            style={styles.infoIconContainer}
+          >
+            <FontAwesome
+              name="info-circle"
+              size={20}
+              color={AppColors.dark.secondaryText}
+            />
+          </TouchableOpacity>
+        </View>
         <Text
           style={[
             styles.budgetStatus,
@@ -266,6 +279,14 @@ const styles = StyleSheet.create({
     color: AppColors.dark.text,
     fontSize: 14,
     marginBottom: 8,
+  },
+  incomeValueContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  infoIconContainer: {
+    paddingLeft: 10, // Add some padding to make it easier to press
   },
   budgetStatus: {
     fontSize: 14,
