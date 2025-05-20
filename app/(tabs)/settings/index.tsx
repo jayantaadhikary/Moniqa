@@ -7,6 +7,7 @@ import {
   Modal,
   SafeAreaView,
   ScrollView,
+  Share, // Added Share API
   StyleSheet,
   Text,
   TextInput,
@@ -22,6 +23,7 @@ import {
   majorCurrencies,
 } from "../../../constants/currencies";
 import useExpenseStore from "../../../stores/useExpenseStore";
+import useIncomeStore from "../../../stores/useIncomeStore";
 import useUserPreferencesStore from "../../../stores/useUserPreferencesStore";
 
 interface SettingItemOption {
@@ -58,10 +60,17 @@ const SettingScreen = () => {
     loadCurrency();
   }, [loadCurrency]);
 
-  const { budgetData, setInitialBudgetData } = useExpenseStore(
+  const { budgetData, setInitialBudgetData, resetExpenses } = useExpenseStore(
     useShallow((state) => ({
       budgetData: state.budgetData,
       setInitialBudgetData: state.setInitialBudgetData,
+      resetExpenses: state.resetExpenses, // Now this should exist
+    }))
+  );
+
+  const { resetIncomes } = useIncomeStore(
+    useShallow((state) => ({
+      resetIncomes: state.resetIncomes, // Now this should exist
     }))
   );
 
@@ -102,20 +111,28 @@ const SettingScreen = () => {
   };
 
   const handleManageCategories = () =>
-    router.push("/settings/manageCategories");
+    router.push("/(tabs)/settings/manageCategories");
+
   const handleNotificationReminders = () =>
     console.log("Navigate to Notification Reminders (Placeholder)");
 
   const handleFreshStart = () => {
     Alert.alert(
       "Fresh Start",
-      "Are you sure you want to clear all your expense data? Your settings (budget, currency, categories) will be kept.",
+      "Are you sure you want to clear all your expense and income data? Your settings (budget, currency, categories) will be kept.",
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: "Clear Expenses",
+          text: "Clear Data",
           style: "destructive",
-          onPress: () => console.log("All expense data cleared (Placeholder)"),
+          onPress: () => {
+            resetExpenses();
+            resetIncomes();
+            Alert.alert(
+              "Data Cleared",
+              "Expense and income data have been cleared successfully."
+            );
+          },
         },
       ]
     );
@@ -130,7 +147,9 @@ const SettingScreen = () => {
         {
           text: "Delete Everything",
           style: "destructive",
-          onPress: () => console.log("All app data cleared (Placeholder)"),
+          onPress: () => {
+            console.log("All app data cleared (Placeholder - Deferred)");
+          },
         },
       ]
     );
@@ -163,8 +182,31 @@ const SettingScreen = () => {
     }
   };
 
-  const handleAboutApp = () =>
-    console.log("Navigate to /settings/about-app (Placeholder)");
+  const handleAboutApp = () => router.push("/(tabs)/settings/about");
+
+  const handleShareApp = async () => {
+    try {
+      const result = await Share.share({
+        message:
+          "Check out Moniqa! It's a great app for tracking expenses and managing your finances simply. Download it here: [Your App Store Link]", // Replace [Your App Store Link] with actual link
+        title: "Share Moniqa with friends", // Optional: Title for the share dialog (Android)
+      });
+      if (result.action === Share.sharedAction) {
+        if (result.activityType) {
+          // Shared with activity type of result.activityType
+          console.log("Shared via:", result.activityType);
+        } else {
+          // Shared
+          console.log("Shared successfully");
+        }
+      } else if (result.action === Share.dismissedAction) {
+        // Dismissed
+        console.log("Share dismissed");
+      }
+    } catch (error: any) {
+      Alert.alert("Error", error.message);
+    }
+  };
 
   const handleUpgrade = () =>
     console.log("Navigate to Upgrade Screen (Placeholder)");
@@ -245,17 +287,16 @@ const SettingScreen = () => {
           action: handleAboutApp,
         },
         {
-          id: "freshStart",
-          title: "Need a fresh start? (Clear Expenses)",
-          icon: "refresh-circle-outline",
-          action: handleFreshStart,
+          id: "shareApp", // New item for sharing
+          title: "Share with friends",
+          icon: "share-social-outline",
+          action: handleShareApp,
         },
         {
-          id: "deleteAccountAndData",
-          title: "Delete Account & All Data",
-          icon: "trash-bin-outline",
-          action: handleDeleteAccountAndData,
-          color: AppColors.dark.error,
+          id: "freshStart",
+          title: "Need a fresh start? (Clear Data)",
+          icon: "refresh-circle-outline",
+          action: handleFreshStart,
         },
       ],
     },

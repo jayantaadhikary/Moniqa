@@ -272,7 +272,7 @@ const HomePage: React.FC = () => {
       {/* Recent Expenses Section */}
       <View style={styles.recentExpensesSection}>
         {expenses.length > 0 && (
-          <Text style={styles.sectionTitle}>Recent Expenses</Text>
+          <Text style={styles.sectionTitle}>My Expenses</Text>
         )}
         {expenses.length > 0 ? (
           <FlatList
@@ -453,6 +453,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
     marginBottom: 16,
+    // marginLeft: 5,
   },
   expenseRow: {
     flexDirection: "row",
@@ -499,7 +500,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#2BBBAD",
+    backgroundColor: AppColors.dark.tint,
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",

@@ -37,6 +37,7 @@ interface ExpenseState {
   deleteExpense: (id: string) => void;
   updateBudget: (period: Period, newTotal: number) => void; // Kept for settings
   setInitialBudgetData: (monthlyBudgetTotal: number) => void; // Changed from setBudgetData
+  resetExpenses: () => void; // Added resetExpenses action
 
   // Calculations
   getFilteredExpenses: () => Expense[];
@@ -131,6 +132,11 @@ const useExpenseStore = create<ExpenseState>((set, get) => ({
 
     setItem("budgetData", JSON.stringify(newBudgetData));
     set({ budgetData: newBudgetData });
+  },
+
+  resetExpenses: () => {
+    set({ expenses: [] });
+    setItem("expenses", JSON.stringify([]));
   },
 
   // Calculations

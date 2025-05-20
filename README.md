@@ -56,8 +56,13 @@
     - [x] Manage Categories (add & delete)
     - [ ] Notification Reminder (gentle reminder & nudges to add expenses and save money)
     - [ ] More App Settings (to be decided)
-  - [ ] Account Settings (just a placeholder for now (won't contain much data anyways as logging in through google/apple id any ways))
-  - Help & Support (contact support (will consist of mailto link), About the app (Will be a screen about me, why i made this app, my other apps and social media links), Delete Account, Terms of Service, Privacy Policy)
+  - [x] Help & Support
+    - [x] Contact Support (mailto link)
+    - [x] About the app
+    - [x] Share with friends
+  - [x] Data Management
+    - [x] Clear Expenses & Income (Fresh Start)
+    - [ ] Delete All App Data (Deferred until Auth)
 
 - [ ] Add Auth (Google, Apple) - Figure out which platform to use
 - [ ] Add App Lock

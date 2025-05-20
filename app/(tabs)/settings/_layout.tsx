@@ -19,7 +19,21 @@ const SettingsLayout = () => {
           headerTintColor: AppColors.dark.text, // Set back button color
         }}
       />
-      <Stack.Screen name="notificationSettings" />
+      {/* <Stack.Screen name="notificationSettings" /> */}
+      {/* Removed notificationSettings as it's not being implemented now */}
+      <Stack.Screen
+        name="about"
+        options={{
+          presentation: "modal",
+          // headerShown: true,
+          // headerTitle: "About Moniqa", // Changed title
+          // headerBackTitle: "Back",
+          // headerStyle: {
+          //   backgroundColor: AppColors.dark.background,
+          // },
+          // headerTintColor: AppColors.dark.text,
+        }}
+      />
     </Stack>
   );
 };

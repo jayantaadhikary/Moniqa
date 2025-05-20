@@ -21,6 +21,7 @@ interface IncomeState {
   editIncome: (updatedIncome: Income) => void;
   deleteIncome: (incomeId: string) => void;
   calculateCurrentMonthIncome: () => number;
+  resetIncomes: () => void; // Added resetIncomes action
 }
 
 const useIncomeStore = create<IncomeState>()(
@@ -53,6 +54,7 @@ const useIncomeStore = create<IncomeState>()(
           return total;
         }, 0);
       },
+      resetIncomes: () => set({ incomes: [] }), // Implemented resetIncomes
     }),
     {
       name: "income-store",
