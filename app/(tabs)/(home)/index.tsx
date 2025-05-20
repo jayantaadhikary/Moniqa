@@ -162,7 +162,7 @@ const HomePage: React.FC = () => {
       <View style={styles.headerSection}>
         <Image
           style={styles.headerImage}
-          source={require("../../../assets/images/placeholder.png")}
+          source={require("../../../assets/images/headerlogo.png")}
         />
         {/* Filter Icon */}
         <TouchableOpacity
@@ -322,8 +322,8 @@ const styles = StyleSheet.create({
   },
   headerImage: {
     width: 100,
-    height: 40,
-    borderRadius: 16,
+    height: 55,
+    resizeMode: "contain",
   },
   headerSection: {
     flexDirection: "row",
