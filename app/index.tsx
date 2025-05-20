@@ -81,7 +81,7 @@ const OnBoardingPage = () => {
             backgroundColor: AppColors.dark.background,
             image: (
               <Image
-                source={require("../assets/images/placeholder.png")}
+                source={require("../assets/images/logo_ideat2.png")}
                 style={styles.image}
               />
             ),

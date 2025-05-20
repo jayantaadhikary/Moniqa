@@ -25,6 +25,7 @@ export const AppColors = {
     cardBackground: "#FFFFFF",
     border: "#E0E0E0",
     primary: mintAccentLight, // Added for completeness, though tint is often used
+    danger: "#FF3B30", // iOS Red
   },
   dark: {
     text: "#FFFFFF", // Pure White for primary text
@@ -40,6 +41,8 @@ export const AppColors = {
     cardBackground: "#2C2C2E",
     border: "#3A3A3C",
     primary: mintAccentDark, // Added for completeness
+    success: "#34C759", // Standard iOS success green
+    danger: "#FF3B30", // iOS Red
   },
 };
 

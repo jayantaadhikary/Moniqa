@@ -30,23 +30,22 @@
   - [x] Click on expense to edit/delete
   - [x] Add a Toast after successful expense addition
   - [ ] Swipe to delete expenses
-  - [ ] Add Income feature
+  - [x] Add Income feature
     - [x] Add Income
     - [x] View total income of month in the budget card
     - [ ] View income list
     - [ ] Edit/Delete Income
-  - [ ] Make the budget card tappable/droppable to show income, expenses and savings
   - [ ] Add Search feature for expenses
 
 - [ ] To think on what more features to add to the Home Screen and how to make it better and more user friendly
 
-- [ ] Summary & Analytics Screen
+- [x] Summary & Analytics Screen
 
   - [x] Basic UI for the summary screen
   - [x] View spending by month, week and year.
   - [x] Line Graph for visualizing spending trends
   - [x] View top spendings by category
-  - [ ] View Spending compared to budget & income
+  - [x] View Spending compared to budget & income
 
 - [ ] Settings Screen
 
@@ -75,6 +74,6 @@
 4. Advanced Analytics - Select Custom Date Ranges
 5. Attach Receipts to expenses
 6. Recurring & Scheduled Expenses
-7. Custom Logos & Widgets
+7. Widgets
 8. AI Integration (Maybe 🤷‍♂️ )
 9. Support an indie developer ❤️

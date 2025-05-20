@@ -1,6 +1,7 @@
 import { AppColors } from "@/constants/Colors";
 import useCategoryStore from "@/stores/useCategoryStore";
-import useExpenseStore, { Expense } from "@/stores/useExpenseStore";
+import useExpenseStore, { Expense, Period } from "@/stores/useExpenseStore";
+import useIncomeStore from "@/stores/useIncomeStore";
 import useUserPreferencesStore from "@/stores/useUserPreferencesStore";
 import {
   differenceInDays,
@@ -55,6 +56,8 @@ const SummaryPage = () => {
   const { expenses } = useExpenseStore();
   const { selectedCurrencySymbol } = useUserPreferencesStore();
   const { masterCategoryIcons, createdCustomCategories } = useCategoryStore();
+  const { budgetData } = useExpenseStore();
+  const { calculateCurrentMonthIncome } = useIncomeStore();
 
   const [currentFilterPeriod, setCurrentFilterPeriod] =
     useState<SummaryPeriodOption>("This Month");
@@ -75,6 +78,12 @@ const SummaryPage = () => {
   const [dynamicRulesLength, setDynamicRulesLength] = useState<
     number | undefined
   >();
+
+  const [monthlyExpensesForOverview, setMonthlyExpensesForOverview] =
+    useState<number>(0);
+  const [monthlyBudgetForOverview, setMonthlyBudgetForOverview] =
+    useState<number>(0);
+  const [currentMonthIncome, setCurrentMonthIncome] = useState<number>(0);
 
   useEffect(() => {
     const now = new Date();
@@ -104,6 +113,9 @@ const SummaryPage = () => {
         startDate = startOfMonth(now);
     }
 
+    const income = calculateCurrentMonthIncome();
+    setCurrentMonthIncome(income);
+
     const filtered = expenses.filter((expense: Expense) => {
       try {
         const expenseDate = parseISO(expense.date);
@@ -127,6 +139,40 @@ const SummaryPage = () => {
 
     setCalculatedTotalExpenses(total);
 
+    const startOfThisMonth = startOfMonth(now);
+    const endOfThisMonth = endOfMonth(now);
+
+    const expensesThisMonth = expenses.filter((expense: Expense) => {
+      try {
+        const expenseDate = parseISO(expense.date);
+        return isWithinInterval(expenseDate, {
+          start: startOfThisMonth,
+          end: endOfThisMonth,
+        });
+      } catch (e) {
+        console.warn(
+          `Error parsing date for expense ID ${expense.id} (overview): ${expense.date}`,
+          e
+        );
+        return false;
+      }
+    });
+
+    const totalThisMonthExpenses = expensesThisMonth.reduce(
+      (sum: number, expense: Expense) => {
+        const amount = parseFloat(expense.amount);
+        return sum + (isNaN(amount) ? 0 : amount);
+      },
+      0
+    );
+    setMonthlyExpensesForOverview(totalThisMonthExpenses);
+
+    const monthBudget = budgetData[Period.Month].total;
+    setMonthlyBudgetForOverview(monthBudget);
+
+    const incomeOverview = calculateCurrentMonthIncome();
+    setCurrentMonthIncome(incomeOverview);
+
     if (total > 0) {
       const categoryMap: { [key: string]: CategorizedExpenseSummary } = {};
 
@@ -141,7 +187,7 @@ const SummaryPage = () => {
 
         if (!categoryMap[categoryName]) {
           categoryMap[categoryName] = {
-            id: categoryName, // Use category name as ID
+            id: categoryName,
             name: categoryName,
             emoji: categoryEmoji,
             amount: 0,
@@ -180,7 +226,7 @@ const SummaryPage = () => {
             );
             return {
               value: sum,
-              label: format(day, "E"), // "Mon", "Tue"
+              label: format(day, "E"),
               date: format(day, "yyyy-MM-dd"),
             };
           });
@@ -381,6 +427,10 @@ const SummaryPage = () => {
     } else {
       setCategorizedExpensesSummary([]);
       setSpendingTrendData([]);
+      setDynamicChartSpacing(40);
+      setDynamicInitialSpacing(10);
+      setDynamicEndSpacing(10);
+      setDynamicRulesLength(undefined);
     }
   }, [
     expenses,
@@ -389,6 +439,8 @@ const SummaryPage = () => {
     customEndDate,
     masterCategoryIcons,
     createdCustomCategories,
+    budgetData,
+    calculateCurrentMonthIncome,
   ]);
 
   const displayPeriodText = () => {
@@ -448,7 +500,9 @@ const SummaryPage = () => {
               <Text style={styles.periodSelectorIcon}>▼</Text>
             </Text>
           </TouchableOpacity>
-          <Text style={styles.totalExpensesLabel}>Total Expenses</Text>
+          <Text style={styles.totalExpensesLabel}>
+            Total Expenses ({displayPeriodText()})
+          </Text>
           <Text style={styles.totalExpensesValue}>
             {selectedCurrencySymbol}
             {calculatedTotalExpenses.toFixed(2)}
@@ -500,12 +554,79 @@ const SummaryPage = () => {
         </View>
 
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Top Categories</Text>
+          <Text style={styles.sectionTitle}>Financial Overview</Text>
+
+          <View style={styles.overviewRow}>
+            <Text style={styles.overviewLabel}>Spending (This Month):</Text>
+            <Text style={styles.overviewValueSpend}>
+              {selectedCurrencySymbol}
+              {monthlyExpensesForOverview.toFixed(2)}
+            </Text>
+          </View>
+
+          <View style={styles.overviewRow}>
+            <Text style={styles.overviewLabel}>Budget (This Month):</Text>
+            <Text style={styles.overviewValue}>
+              {selectedCurrencySymbol}
+              {monthlyBudgetForOverview.toFixed(2)}
+            </Text>
+          </View>
+
+          <View style={styles.overviewRow}>
+            <Text style={styles.overviewLabel}>Income (This Month):</Text>
+            <Text style={styles.overviewValueIncome}>
+              {selectedCurrencySymbol}
+              {currentMonthIncome.toFixed(2)}
+            </Text>
+          </View>
+
+          <View style={styles.separator} />
+
+          {monthlyBudgetForOverview > 0 && (
+            <View style={styles.overviewRow}>
+              <Text style={styles.overviewLabel}>Budget Status:</Text>
+              <Text
+                style={
+                  monthlyExpensesForOverview <= monthlyBudgetForOverview
+                    ? styles.overviewValueSuccess
+                    : styles.overviewValueError
+                }
+              >
+                {monthlyExpensesForOverview <= monthlyBudgetForOverview
+                  ? `${selectedCurrencySymbol}${(
+                      monthlyBudgetForOverview - monthlyExpensesForOverview
+                    ).toFixed(2)} Under Budget`
+                  : `${selectedCurrencySymbol}${(
+                      monthlyExpensesForOverview - monthlyBudgetForOverview
+                    ).toFixed(2)} Over Budget`}
+              </Text>
+            </View>
+          )}
+
+          <View style={styles.overviewRow}>
+            <Text style={styles.overviewLabel}>Savings (This Month):</Text>
+            <Text
+              style={
+                currentMonthIncome - monthlyExpensesForOverview >= 0
+                  ? styles.overviewValueSuccess
+                  : styles.overviewValueError
+              }
+            >
+              {selectedCurrencySymbol}
+              {(currentMonthIncome - monthlyExpensesForOverview).toFixed(2)}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>
+            Top Categories ({displayPeriodText()})
+          </Text>
           {categorizedExpensesSummary.length > 0 ? (
             <FlatList
-              data={categorizedExpensesSummary} // Already sliced to top 5
+              data={categorizedExpensesSummary}
               renderItem={renderCategoryItem}
-              keyExtractor={(item) => item.id} // item.id is now category name
+              keyExtractor={(item) => item.id}
               scrollEnabled={false}
               ItemSeparatorComponent={() => (
                 <View style={styles.categorySeparator} />
@@ -541,7 +662,6 @@ const SummaryPage = () => {
                     "This Week",
                     "This Month",
                     "This Year",
-                    "Custom",
                   ] as SummaryPeriodOption[]
                 ).map((period) => (
                   <Pressable
@@ -626,7 +746,6 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "bold",
     color: AppColors.dark.primary,
-    marginBottom: 10,
   },
   sectionTitle: {
     fontSize: 18,
@@ -723,5 +842,46 @@ const styles = StyleSheet.create({
   selectedModalOptionText: {
     color: AppColors.dark.tint,
     fontWeight: "bold",
+  },
+  overviewRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 6,
+  },
+  overviewLabel: {
+    fontSize: 15,
+    color: AppColors.dark.secondaryText,
+    flex: 1,
+  },
+  overviewValue: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: AppColors.dark.text,
+  },
+  overviewValueSpend: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: AppColors.dark.error,
+  },
+  overviewValueIncome: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: AppColors.dark.success,
+  },
+  overviewValueSuccess: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: AppColors.dark.success,
+  },
+  overviewValueError: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: AppColors.dark.error,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: AppColors.dark.border,
+    marginVertical: 10,
   },
 });
