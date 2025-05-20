@@ -113,7 +113,8 @@ const InputPage = () => {
     setCategory("");
     setExpenseNote("");
     setExpenseDate(new Date());
-    router.replace("/(tabs)/(home)"); // Added this line
+    // router.replace("/(tabs)/(home)"); // Added this line
+    router.back(); // removed above implementation and did this so that user don't see a rerender when he clicks at home tab below
   };
 
   const handleIncomeSubmit = useCallback(() => {
@@ -146,7 +147,8 @@ const InputPage = () => {
     setSource("");
     setIncomeNote("");
     setIncomeDate(new Date());
-    router.replace("/(tabs)/(home)"); // Added this line
+    // router.replace("/(tabs)/(home)"); // Added this line
+    router.back(); // removed above implementation and did this so that user don't see a rerender when he clicks at home tab below
   }, [
     incomeAmount,
     source,

@@ -29,7 +29,7 @@
   - [x] Filter By Day/Week/Month
   - [x] Click on expense to edit/delete
   - [x] Add a Toast after successful expense addition
-  - [ ] Swipe to delete expenses
+  - [x] Swipe to delete expenses
   - [x] Add Income feature
     - [x] Add Income
     - [x] View total income of month in the budget card

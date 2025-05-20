@@ -1,8 +1,9 @@
 import { FontAwesome, Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   FlatList,
   Image,
   Modal,
@@ -14,7 +15,9 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { Swipeable } from "react-native-gesture-handler";
 import { ProgressBar } from "react-native-paper";
+import Toast from "react-native-toast-message";
 import { AppColors } from "../../../constants/Colors";
 import useExpenseStore, {
   Expense,
@@ -26,14 +29,18 @@ import useUserPreferencesStore from "../../../stores/useUserPreferencesStore";
 const HomePage: React.FC = () => {
   const router = useRouter();
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
 
   const selectedPeriod = useExpenseStore((state) => state.selectedPeriod);
   const setSelectedPeriod = useExpenseStore((state) => state.setSelectedPeriod);
   const budgetData = useExpenseStore((state) => state.budgetData);
   const calculateSpent = useExpenseStore((state) => state.calculateSpent);
+  // Subscribe to the expenses array directly from the store
+  const allExpenses = useExpenseStore((state) => state.expenses);
   const getFilteredExpenses = useExpenseStore(
     (state) => state.getFilteredExpenses
   );
+  const deleteExpense = useExpenseStore((state) => state.deleteExpense);
   const { selectedCurrencySymbol } = useUserPreferencesStore();
 
   const calculateCurrentMonthIncome = useIncomeStore(
@@ -45,33 +52,109 @@ const HomePage: React.FC = () => {
   const { total: budgetTotal } = budgetData[selectedPeriod];
   const progress = budgetTotal > 0 ? spent / budgetTotal : 0;
 
-  const filteredExpenses = getFilteredExpenses();
+  // Use useMemo to avoid creating a new array reference on each render
+  const filteredExpenses = useMemo(() => {
+    return getFilteredExpenses();
+  }, [getFilteredExpenses, allExpenses, selectedPeriod]);
 
-  const renderExpenseItem = ({ item }: { item: Expense }) => {
-    const amountAsNumber = parseFloat(item.amount);
-    const formattedAmount = !isNaN(amountAsNumber)
-      ? amountAsNumber.toFixed(2)
-      : "0.00";
-    return (
-      <TouchableOpacity
-        style={styles.expenseRow}
-        onPress={() => router.push(`/expense/${item.id}`)}
-      >
-        <Text style={styles.expenseIcon}>{item.emoji}</Text>
-        <View style={styles.expenseDetailsContainer}>
-          <Text style={styles.expenseTitle}>{item.category}</Text>
-          <Text style={styles.expenseDate}>
-            {format(new Date(item.date), "dd MMM")}
-          </Text>
-          {item.note && <Text style={styles.expenseNote}>{item.note}</Text>}
+  // Only update local state when the actual array content changes
+  useEffect(() => {
+    setExpenses(filteredExpenses);
+  }, [filteredExpenses]);
+
+  // Handle expense deletion with confirmation
+  const handleDeleteExpense = useCallback(
+    (expenseId: string, closeSwipeable?: () => void) => {
+      if (closeSwipeable) {
+        closeSwipeable();
+      }
+
+      Alert.alert(
+        "Delete Expense",
+        "Are you sure you want to delete this expense?",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: () => {
+              deleteExpense(expenseId);
+              // No need to manually update expenses state here
+              // It will happen automatically through the useEffect
+              Toast.show({
+                type: "success",
+                text1: "Expense Deleted",
+                text2: "The expense has been successfully removed.",
+                position: "bottom",
+                visibilityTime: 2000,
+              });
+            },
+          },
+        ]
+      );
+    },
+    [deleteExpense]
+  );
+
+  // Render delete button when swiping right to left
+  const renderRightActions = useCallback(
+    (_progress: any, _dragX: any, swipeable: Swipeable, itemId: string) => {
+      return (
+        <View style={styles.rightActionContainer}>
+          <TouchableOpacity
+            style={styles.deleteAction}
+            onPress={() => handleDeleteExpense(itemId, () => swipeable.close())}
+          >
+            <Ionicons
+              name="trash-outline"
+              size={24}
+              color={AppColors.dark.text}
+            />
+          </TouchableOpacity>
         </View>
-        <Text style={styles.expenseAmount}>
-          {selectedCurrencySymbol}
-          {formattedAmount}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
+      );
+    },
+    [handleDeleteExpense]
+  );
+
+  const renderExpenseItem = useCallback(
+    ({ item }: { item: Expense }) => {
+      const amountAsNumber = parseFloat(item.amount);
+      const formattedAmount = !isNaN(amountAsNumber)
+        ? amountAsNumber.toFixed(2)
+        : "0.00";
+
+      return (
+        <Swipeable
+          renderRightActions={(progress, dragX, swipeable) =>
+            renderRightActions(progress, dragX, swipeable, item.id)
+          }
+          friction={2}
+          rightThreshold={40}
+          overshootRight={false}
+        >
+          <TouchableOpacity
+            style={styles.expenseRow}
+            onPress={() => router.push(`/(tabs)/(home)/expense/${item.id}`)}
+          >
+            <Text style={styles.expenseIcon}>{item.emoji}</Text>
+            <View style={styles.expenseDetailsContainer}>
+              <Text style={styles.expenseTitle}>{item.category}</Text>
+              <Text style={styles.expenseDate}>
+                {format(parseISO(item.date), "dd MMM")}
+              </Text>
+              {item.note && <Text style={styles.expenseNote}>{item.note}</Text>}
+            </View>
+            <Text style={styles.expenseAmount}>
+              {selectedCurrencySymbol}
+              {formattedAmount}
+            </Text>
+          </TouchableOpacity>
+        </Swipeable>
+      );
+    },
+    [selectedCurrencySymbol, router, renderRightActions]
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -188,15 +271,17 @@ const HomePage: React.FC = () => {
 
       {/* Recent Expenses Section */}
       <View style={styles.recentExpensesSection}>
-        {filteredExpenses.length > 0 && (
+        {expenses.length > 0 && (
           <Text style={styles.sectionTitle}>Recent Expenses</Text>
         )}
-        {filteredExpenses.length > 0 ? (
+        {expenses.length > 0 ? (
           <FlatList
-            data={filteredExpenses}
+            data={expenses}
             keyExtractor={(item) => item.id}
             renderItem={renderExpenseItem}
             ItemSeparatorComponent={() => <View style={styles.divider} />}
+            contentContainerStyle={styles.listContentContainer}
+            extraData={expenses} // Add this to ensure re-render when expenses change
           />
         ) : (
           <View style={styles.emptyStateContainer}>
@@ -221,6 +306,8 @@ const HomePage: React.FC = () => {
       >
         <Ionicons name="add" size={24} color={AppColors.dark.text} />
       </TouchableOpacity>
+
+      <Toast />
     </SafeAreaView>
   );
 };
@@ -371,7 +458,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 12,
-    marginRight: 16,
+    paddingHorizontal: 16,
+    backgroundColor: AppColors.dark.background, // Needed for swipeable to work correctly
   },
   expenseIcon: {
     fontSize: 24,
@@ -440,5 +528,28 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     marginTop: 8,
+  },
+  deleteButton: {
+    justifyContent: "center",
+    alignItems: "center",
+    width: 64,
+    backgroundColor: AppColors.dark.error + "20",
+    borderRadius: 8,
+    marginVertical: 8,
+  },
+  rightActionContainer: {
+    justifyContent: "center",
+    alignItems: "flex-end",
+  },
+  deleteAction: {
+    backgroundColor: "rgba(255, 59, 48, 0.8)", // Semi-transparent red
+    justifyContent: "center",
+    alignItems: "center",
+    width: 80,
+    height: "100%",
+    borderRadius: 4, // Optional: rounded corners
+  },
+  listContentContainer: {
+    paddingBottom: 80, // Ensure space for the FAB button
   },
 });

@@ -139,6 +139,8 @@ const EditIncomePage: React.FC = () => {
               type: "success",
               text1: "Income Deleted",
               text2: "The income entry has been removed.",
+              topOffset: 50,
+              visibilityTime: 2000,
             });
             if (router.canGoBack()) router.back();
           },
