@@ -24,14 +24,25 @@ const SettingsLayout = () => {
       <Stack.Screen
         name="about"
         options={{
-          presentation: "modal",
+          presentation: "formSheet",
           // headerShown: true,
           // headerTitle: "About Moniqa", // Changed title
           // headerBackTitle: "Back",
-          // headerStyle: {
-          //   backgroundColor: AppColors.dark.background,
-          // },
+          sheetGrabberVisible: true,
+          contentStyle: {
+            backgroundColor: AppColors.dark.background,
+          },
           // headerTintColor: AppColors.dark.text,
+        }}
+      />
+      <Stack.Screen
+        name="premium"
+        options={{
+          presentation: "formSheet",
+          sheetGrabberVisible: true,
+          contentStyle: {
+            backgroundColor: AppColors.dark.background,
+          },
         }}
       />
     </Stack>

@@ -113,9 +113,6 @@ const SettingScreen = () => {
   const handleManageCategories = () =>
     router.push("/(tabs)/settings/manageCategories");
 
-  const handleNotificationReminders = () =>
-    console.log("Navigate to Notification Reminders (Placeholder)");
-
   const handleFreshStart = () => {
     Alert.alert(
       "Fresh Start",
@@ -137,26 +134,6 @@ const SettingScreen = () => {
       ]
     );
   };
-
-  const handleDeleteAccountAndData = () => {
-    Alert.alert(
-      "Delete Account & All Data",
-      "Are you sure you want to delete your account and all associated data? This will reset the app to its initial state and cannot be undone.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete Everything",
-          style: "destructive",
-          onPress: () => {
-            console.log("All app data cleared (Placeholder - Deferred)");
-          },
-        },
-      ]
-    );
-  };
-
-  const handleAccountSettings = () =>
-    console.log("Navigate to Account Settings (Placeholder)");
 
   const handleContactSupport = async () => {
     const email = "jayadky@yahoo.com";
@@ -208,8 +185,7 @@ const SettingScreen = () => {
     }
   };
 
-  const handleUpgrade = () =>
-    console.log("Navigate to Upgrade Screen (Placeholder)");
+  const handleUpgrade = () => router.push("/(tabs)/settings/premium");
 
   const settingsData: SettingsGroupData[] = [
     {
@@ -234,26 +210,6 @@ const SettingScreen = () => {
           icon: "list-outline",
           action: handleManageCategories,
         },
-        // {
-        //   id: "reminders",
-        //   title: "Reminders",
-        //   icon: "notifications-outline",
-        //   action: handleNotificationReminders,
-        //   isPlaceholder: true,
-        // },
-      ],
-    },
-    {
-      id: "accountSettings",
-      title: "Account Settings",
-      options: [
-        {
-          id: "manageAccount",
-          title: "Manage Account",
-          icon: "person-circle-outline",
-          action: handleAccountSettings,
-          isPlaceholder: true,
-        },
         {
           id: "appLock",
           title: "App Lock",
@@ -263,10 +219,9 @@ const SettingScreen = () => {
         },
         {
           id: "upgrade",
-          title: "Upgrade to Pro",
+          title: "Premium Features",
           icon: "star-outline",
           action: handleUpgrade,
-          isPlaceholder: true,
         },
       ],
     },
