@@ -35,7 +35,7 @@
     - [x] View total income of month in the budget card
     - [x] View income list
     - [x] Edit/Delete Income
-  - [ ] Add Search feature for expenses
+  - [x] Add Search feature for expenses
 
 - [ ] To think on what more features to add to the Home Screen and how to make it better and more user friendly
 
@@ -54,7 +54,6 @@
     - [x] Manage Currency
     - [x] Manage Budget
     - [x] Manage Categories (add & delete)
-    - [ ] Notification Reminder (gentle reminder & nudges to add expenses and save money)
     - [ ] More App Settings (to be decided)
   - [x] Help & Support
     - [x] Contact Support (mailto link)
@@ -66,7 +65,7 @@
 
 - [ ] Add Auth (Google, Apple) - Figure out which platform to use
 - [ ] Add App Lock
-- [ ] Add Notifications
+<!-- - [ ] Add Notifications -->
 - [ ] A lot more
 
 ### Premium Features (Coming Soon)

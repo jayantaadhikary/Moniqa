@@ -234,13 +234,13 @@ const SettingScreen = () => {
           icon: "list-outline",
           action: handleManageCategories,
         },
-        {
-          id: "reminders",
-          title: "Reminders",
-          icon: "notifications-outline",
-          action: handleNotificationReminders,
-          isPlaceholder: true,
-        },
+        // {
+        //   id: "reminders",
+        //   title: "Reminders",
+        //   icon: "notifications-outline",
+        //   action: handleNotificationReminders,
+        //   isPlaceholder: true,
+        // },
       ],
     },
     {

@@ -3,7 +3,6 @@ import {
   startOfWeek as dateFnsStartOfWeek,
 } from "date-fns";
 import { create } from "zustand";
-import mockExpenses from "../sampleData/mockExpenses";
 import { getItem, setItem } from "../utils/mmkv";
 
 // Define Period as a string enum for easier iteration
@@ -51,7 +50,7 @@ const loadInitialState = () => {
   const budgetData = getItem("budgetData");
 
   return {
-    expenses: expenses ? JSON.parse(expenses) : mockExpenses,
+    expenses: expenses ? JSON.parse(expenses) : [],
     selectedPeriod: (selectedPeriod as Period) || Period.Month,
     budgetData: budgetData
       ? JSON.parse(budgetData)

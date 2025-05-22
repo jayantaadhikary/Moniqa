@@ -1,16 +1,18 @@
 import { FontAwesome, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { format, parseISO } from "date-fns";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   Alert,
   FlatList,
   Image,
+  Keyboard,
   Modal,
   Pressable,
   SafeAreaView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
@@ -29,17 +31,13 @@ import useUserPreferencesStore from "../../../stores/useUserPreferencesStore";
 const HomePage: React.FC = () => {
   const router = useRouter();
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
+  const storeExpenses = useExpenseStore((state) => state.expenses);
   const selectedPeriod = useExpenseStore((state) => state.selectedPeriod);
   const setSelectedPeriod = useExpenseStore((state) => state.setSelectedPeriod);
   const budgetData = useExpenseStore((state) => state.budgetData);
   const calculateSpent = useExpenseStore((state) => state.calculateSpent);
-  // Subscribe to the expenses array directly from the store
-  const allExpenses = useExpenseStore((state) => state.expenses);
-  const getFilteredExpenses = useExpenseStore(
-    (state) => state.getFilteredExpenses
-  );
   const deleteExpense = useExpenseStore((state) => state.deleteExpense);
   const { selectedCurrencySymbol } = useUserPreferencesStore();
 
@@ -52,17 +50,57 @@ const HomePage: React.FC = () => {
   const { total: budgetTotal } = budgetData[selectedPeriod];
   const progress = budgetTotal > 0 ? spent / budgetTotal : 0;
 
-  // Use useMemo to avoid creating a new array reference on each render
+  const getFilteredExpenses = useCallback(
+    (currentExpenses: Expense[], period: Period) => {
+      const now = new Date();
+      return currentExpenses.filter((expense) => {
+        const expenseDate = new Date(expense.date);
+        switch (period) {
+          case Period.Day:
+            return (
+              expenseDate.getDate() === now.getDate() &&
+              expenseDate.getMonth() === now.getMonth() &&
+              expenseDate.getFullYear() === now.getFullYear()
+            );
+          case Period.Week:
+            const startOfWeek = new Date(now);
+            startOfWeek.setDate(
+              now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1)
+            );
+            startOfWeek.setHours(0, 0, 0, 0);
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
+            endOfWeek.setHours(23, 59, 59, 999);
+            return expenseDate >= startOfWeek && expenseDate <= endOfWeek;
+          case Period.Month:
+            return (
+              expenseDate.getMonth() === now.getMonth() &&
+              expenseDate.getFullYear() === now.getFullYear()
+            );
+          default:
+            return true;
+        }
+      });
+    },
+    []
+  );
+
   const filteredExpenses = useMemo(() => {
-    return getFilteredExpenses();
-  }, [getFilteredExpenses, allExpenses, selectedPeriod]);
+    const baseFilteredExpenses = getFilteredExpenses(
+      storeExpenses,
+      selectedPeriod
+    );
+    if (searchQuery.trim() === "") {
+      return baseFilteredExpenses;
+    }
+    return baseFilteredExpenses.filter(
+      (expense) =>
+        expense.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (expense.note &&
+          expense.note.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+  }, [storeExpenses, selectedPeriod, searchQuery, getFilteredExpenses]);
 
-  // Only update local state when the actual array content changes
-  useEffect(() => {
-    setExpenses(filteredExpenses);
-  }, [filteredExpenses]);
-
-  // Handle expense deletion with confirmation
   const handleDeleteExpense = useCallback(
     (expenseId: string, closeSwipeable?: () => void) => {
       if (closeSwipeable) {
@@ -79,8 +117,6 @@ const HomePage: React.FC = () => {
             style: "destructive",
             onPress: () => {
               deleteExpense(expenseId);
-              // No need to manually update expenses state here
-              // It will happen automatically through the useEffect
               Toast.show({
                 type: "success",
                 text1: "Expense Deleted",
@@ -96,7 +132,6 @@ const HomePage: React.FC = () => {
     [deleteExpense]
   );
 
-  // Render delete button when swiping right to left
   const renderRightActions = useCallback(
     (_progress: any, _dragX: any, swipeable: Swipeable, itemId: string) => {
       return (
@@ -157,158 +192,172 @@ const HomePage: React.FC = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header Section */}
-      <View style={styles.headerSection}>
-        <Image
-          style={styles.headerImage}
-          source={require("../../../assets/images/headerlogo.png")}
-        />
-        {/* Filter Icon */}
-        <TouchableOpacity
-          style={styles.filterIcon}
-          onPress={() => setIsModalVisible(true)}
-        >
-          <Ionicons name="filter" size={24} color={AppColors.dark.text} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Bottom Sheet Modal for selecting period */}
-      <Modal
-        visible={isModalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setIsModalVisible(false)}
-      >
-        <TouchableWithoutFeedback onPress={() => setIsModalVisible(false)}>
-          <View style={styles.bottomSheetContainer}>
-            <View style={styles.bottomSheetContent}>
-              <Text style={styles.modalTitle}>Choose budget period:</Text>
-              {Object.values(Period).map((periodValue) => (
-                <Pressable
-                  key={periodValue}
-                  style={styles.modalOption}
-                  onPress={() => {
-                    setSelectedPeriod(periodValue as Period);
-                    setIsModalVisible(false);
-                  }}
-                >
-                  <View style={styles.modalOptionRow}>
-                    {selectedPeriod === periodValue && (
-                      <MaterialIcons
-                        name="check-circle"
-                        size={20}
-                        color={AppColors.dark.tint}
-                        style={styles.modalOptionCheck}
-                      />
-                    )}
-                    <Text style={styles.modalOptionText}>
-                      {periodValue.charAt(0).toUpperCase() +
-                        periodValue.slice(1)}
-                    </Text>
-                  </View>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-
-      {/* Tappable Card */}
-      <View style={styles.budgetCard}>
-        <View style={styles.budgetHeader}>
-          <Text style={styles.budgetTitle}>
-            📅{" "}
-            {selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)}{" "}
-            Budget
-          </Text>
-        </View>
-        <Text style={styles.budgetDetails}>
-          💸 {selectedCurrencySymbol}
-          {spent.toFixed(2)} spent of {selectedCurrencySymbol}
-          {budgetTotal.toFixed(2)}
-        </Text>
-        <View style={styles.incomeValueContainer}>
-          <Text style={styles.incomeDetails}>
-            💰 Income (This Month): {selectedCurrencySymbol}
-            {currentMonthIncome.toFixed(2)}
-          </Text>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.headerSection}>
+          <Image
+            style={styles.headerImage}
+            source={require("../../../assets/images/headerlogo.png")}
+          />
           <TouchableOpacity
-            onPress={() => router.push("/(tabs)/(home)/incomeList")}
-            style={styles.infoIconContainer}
+            style={styles.filterIcon}
+            onPress={() => setIsModalVisible(true)}
           >
-            <FontAwesome
-              name="info-circle"
-              size={20}
-              color={AppColors.dark.secondaryText}
-            />
+            <Ionicons name="filter" size={24} color={AppColors.dark.text} />
           </TouchableOpacity>
         </View>
-        <Text
-          style={[
-            styles.budgetStatus,
-            spent >= budgetTotal ? styles.exceededText : styles.remainingText,
-          ]}
-        >
-          {spent === budgetTotal
-            ? `⚠️ Budget Limit reached!`
-            : spent > budgetTotal
-            ? `⚠️ Exceeded by ${selectedCurrencySymbol}${(
-                spent - budgetTotal
-              ).toFixed(2)}`
-            : `✅ ${selectedCurrencySymbol}${(budgetTotal - spent).toFixed(
-                2
-              )} left`}
-        </Text>
-        <ProgressBar
-          progress={progress > 1 ? 1 : progress}
-          color={
-            spent > budgetTotal ? AppColors.dark.error : AppColors.dark.tint
-          }
-          style={styles.progressBar}
-        />
-      </View>
 
-      {/* Recent Expenses Section */}
-      <View style={styles.recentExpensesSection}>
-        {expenses.length > 0 && (
-          <Text style={styles.sectionTitle}>My Expenses</Text>
-        )}
-        {expenses.length > 0 ? (
+        <Modal
+          visible={isModalVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setIsModalVisible(false)}
+        >
+          <TouchableWithoutFeedback onPress={() => setIsModalVisible(false)}>
+            <View style={styles.bottomSheetContainer}>
+              <View style={styles.bottomSheetContent}>
+                <Text style={styles.modalTitle}>Choose budget period:</Text>
+                {Object.values(Period).map((periodValue) => (
+                  <Pressable
+                    key={periodValue}
+                    style={styles.modalOption}
+                    onPress={() => {
+                      setSelectedPeriod(periodValue as Period);
+                      setIsModalVisible(false);
+                    }}
+                  >
+                    <View style={styles.modalOptionRow}>
+                      {selectedPeriod === periodValue && (
+                        <MaterialIcons
+                          name="check-circle"
+                          size={20}
+                          color={AppColors.dark.tint}
+                          style={styles.modalOptionCheck}
+                        />
+                      )}
+                      <Text style={styles.modalOptionText}>
+                        {periodValue.charAt(0).toUpperCase() +
+                          periodValue.slice(1)}
+                      </Text>
+                    </View>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+
+        <View style={styles.budgetCard}>
+          <View style={styles.budgetHeader}>
+            <Text style={styles.budgetTitle}>
+              📅{" "}
+              {selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)}{" "}
+              Budget
+            </Text>
+          </View>
+          <Text style={styles.budgetDetails}>
+            💸 {selectedCurrencySymbol}
+            {spent.toFixed(2)} spent of {selectedCurrencySymbol}
+            {budgetTotal.toFixed(2)}
+          </Text>
+          <View style={styles.incomeValueContainer}>
+            <Text style={styles.incomeDetails}>
+              💰 Income (This Month): {selectedCurrencySymbol}
+              {currentMonthIncome.toFixed(2)}
+            </Text>
+            <TouchableOpacity
+              onPress={() => router.push("/(tabs)/(home)/incomeList")}
+              style={styles.infoIconContainer}
+            >
+              <FontAwesome
+                name="info-circle"
+                size={20}
+                color={AppColors.dark.secondaryText}
+              />
+            </TouchableOpacity>
+          </View>
+          <Text
+            style={[
+              styles.budgetStatus,
+              spent >= budgetTotal ? styles.exceededText : styles.remainingText,
+            ]}
+          >
+            {spent === budgetTotal
+              ? `⚠️ Budget Limit reached!`
+              : spent > budgetTotal
+              ? `⚠️ Exceeded by ${selectedCurrencySymbol}${(
+                  spent - budgetTotal
+                ).toFixed(2)}`
+              : `✅ ${selectedCurrencySymbol}${(budgetTotal - spent).toFixed(
+                  2
+                )} left`}
+          </Text>
+          <ProgressBar
+            progress={progress > 1 ? 1 : progress}
+            color={
+              spent > budgetTotal ? AppColors.dark.error : AppColors.dark.tint
+            }
+            style={styles.progressBar}
+          />
+        </View>
+
+        <View style={styles.recentExpensesSection}>
+          <View style={styles.searchContainer}>
+            <Ionicons
+              name="search"
+              size={20}
+              color={AppColors.dark.secondaryText}
+              style={styles.searchIconStyle}
+            />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search expenses (category or note)"
+              placeholderTextColor={AppColors.dark.secondaryText}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
+          {filteredExpenses.length > 0 && (
+            <Text style={styles.sectionTitle}>My Expenses</Text>
+          )}
+          {filteredExpenses.length === 0 && !searchQuery && (
+            <View style={styles.emptyStateContainer}>
+              <Text style={styles.noExpensesText}>
+                No expenses recorded for this period yet.
+              </Text>
+              <Text style={styles.emptyStateMessage}>
+                Tap the &apos;+&apos; button to add your first expense!
+              </Text>
+            </View>
+          )}
+          {filteredExpenses.length === 0 && searchQuery && (
+            <View style={styles.emptyStateContainer}>
+              <Text style={styles.noExpensesText}>No expenses found.</Text>
+              <Text style={styles.emptyStateMessage}>
+                Try a different search term.
+              </Text>
+            </View>
+          )}
           <FlatList
-            data={expenses}
+            data={filteredExpenses}
             keyExtractor={(item) => item.id}
             renderItem={renderExpenseItem}
             ItemSeparatorComponent={() => <View style={styles.divider} />}
             contentContainerStyle={styles.listContentContainer}
-            extraData={expenses} // Add this to ensure re-render when expenses change
+            extraData={filteredExpenses}
           />
-        ) : (
-          <View style={styles.emptyStateContainer}>
-            <Ionicons
-              name="wallet-outline"
-              size={64}
-              color={AppColors.dark.secondaryText}
-              style={styles.emptyStateIcon}
-            />
-            <Text style={styles.noExpensesText}>No expenses yet!</Text>
-            <Text style={styles.emptyStateMessage}>
-              Tap the + button to add your first expense.
-            </Text>
-          </View>
-        )}
-      </View>
+        </View>
 
-      {/* Floating Add Button */}
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={() => router.push("/(tabs)/(home)/input")}
-      >
-        <Ionicons name="add" size={24} color={AppColors.dark.text} />
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => router.push("/(tabs)/(home)/input")}
+        >
+          <Ionicons name="add" size={24} color={AppColors.dark.text} />
+        </TouchableOpacity>
 
-      <Toast />
-    </SafeAreaView>
+        <Toast />
+      </SafeAreaView>
+    </TouchableWithoutFeedback>
   );
 };
 
@@ -373,7 +422,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   infoIconContainer: {
-    paddingLeft: 10, // Add some padding to make it easier to press
+    paddingLeft: 10,
   },
   budgetStatus: {
     fontSize: 14,
@@ -445,6 +494,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: AppColors.dark.tint + "20",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+  },
+  searchIconStyle: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 12,
+    color: AppColors.dark.text,
+    fontSize: 16,
+  },
   recentExpensesSection: {
     flex: 1,
   },
@@ -453,14 +519,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
     marginBottom: 16,
-    // marginLeft: 5,
   },
   expenseRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: AppColors.dark.background, // Needed for swipeable to work correctly
+    backgroundColor: AppColors.dark.background,
   },
   expenseIcon: {
     fontSize: 24,
@@ -468,11 +533,12 @@ const styles = StyleSheet.create({
   },
   expenseDetailsContainer: {
     flex: 1,
+    marginRight: 8,
   },
   expenseTitle: {
-    fontWeight: "bold",
     color: AppColors.dark.text,
     fontSize: 16,
+    fontWeight: "bold",
   },
   expenseDate: {
     color: AppColors.dark.secondaryText,
@@ -481,76 +547,61 @@ const styles = StyleSheet.create({
   expenseNote: {
     color: AppColors.dark.secondaryText,
     fontSize: 12,
-    marginTop: 4,
+    fontStyle: "italic",
   },
   expenseAmount: {
-    fontWeight: "bold",
     color: AppColors.dark.text,
     fontSize: 16,
+    fontWeight: "bold",
   },
-  divider: {
-    height: 1,
-    backgroundColor: "#1e1e1e",
-    marginVertical: 8,
-  },
-  addButton: {
-    position: "absolute",
-    bottom: 24,
-    right: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: AppColors.dark.tint,
+  rightActionContainer: {
+    backgroundColor: AppColors.dark.error,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+    width: 75,
   },
-  noExpensesText: {
-    color: AppColors.dark.secondaryText,
-    fontSize: 16,
-    textAlign: "center",
-    marginTop: 16,
+  deleteAction: {
+    padding: 10,
   },
   emptyStateContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 16,
+    padding: 20,
   },
-  emptyStateIcon: {
-    marginBottom: 16,
+  noExpensesText: {
+    color: AppColors.dark.text,
+    fontSize: 18,
+    textAlign: "center",
+    marginBottom: 8,
   },
   emptyStateMessage: {
     color: AppColors.dark.secondaryText,
     fontSize: 14,
     textAlign: "center",
-    marginTop: 8,
   },
-  deleteButton: {
-    justifyContent: "center",
-    alignItems: "center",
-    width: 64,
-    backgroundColor: AppColors.dark.error + "20",
-    borderRadius: 8,
-    marginVertical: 8,
-  },
-  rightActionContainer: {
-    justifyContent: "center",
-    alignItems: "flex-end",
-  },
-  deleteAction: {
-    backgroundColor: "rgba(255, 59, 48, 0.8)", // Semi-transparent red
-    justifyContent: "center",
-    alignItems: "center",
-    width: 80,
-    height: "100%",
-    borderRadius: 4, // Optional: rounded corners
+  divider: {
+    height: 1,
+    backgroundColor: AppColors.dark.tint + "30",
   },
   listContentContainer: {
-    paddingBottom: 80, // Ensure space for the FAB button
+    paddingBottom: 80,
   },
+  addButton: {
+    position: "absolute",
+    bottom: 30,
+    right: 30,
+    backgroundColor: AppColors.dark.tint,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  expenseDetails: {},
 });
